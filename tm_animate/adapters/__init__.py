@@ -1,0 +1,1 @@
+# add one line to import new model to trigger registration dectorator

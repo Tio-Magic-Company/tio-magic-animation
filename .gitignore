@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+.env
+.DS_Store
+venv/
+generation_log.json
+generation_log.txt
