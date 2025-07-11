@@ -32,11 +32,11 @@ def check_status(job_id: str):
     tm.check_generation_status(job_id)
     
 if __name__ == "__main__":
-    # status = ""
+    status = "dfbb5dfa-bc22-40a8-8c3b-59be9f07f4f6"
     # text_to_video_example()
     # check_status(status)
 
     # image_to_video_example()
-    # check_status(status)
-    interpolate_example()
+    check_status(status)
+    # interpolate_example()
 

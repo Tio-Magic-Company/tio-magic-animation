@@ -2,13 +2,19 @@
 Modal API helper functions for checking and deploying Modal applications.
 These utilities help manage the lifecycle of Modal apps across your project.
 """
+import sys
+import multiprocessing
+import subprocess
 import time
 import logging
+from fastapi import Body
+from fastapi.responses import JSONResponse
 import requests
 from typing import Dict, Any, Optional
 from dataclasses import dataclass, asdict
 import modal
 from modal.exception import NotFoundError
+import PIL.Image
 
 """MODAL VIDEO GENERATION TRACKING"""
 @dataclass
@@ -100,18 +106,81 @@ def check_modal_app_deployment(app, app_name) -> Dict[str, Any]:
         result['message'] = f"Error deploying Modal app: {str(e)}"
     return result
 
-# def save_to_log(result):
-#     import json
-#     import os
-#     cur_dir = os.path.dirname(os.path.abspath(__file__))
-#     repo_root = os.path.dirname(os.path.dirname(os.path.dirname(cur_dir)))
-#     log_file_path = os.path.join(repo_root, 'generation_log.txt')
+"""MODAL ENDPOINTS"""
+def create_web_inference_endpoint(generate_method, required_params=None, image_params=None):
+    """
+    Create a generalized web_inference endpoint for Modal classes.
+    
+    Args:
+        generate_method: The generate method to call
+        required_params: List of required parameter names (excluding prompt)
+        image_params: Dict mapping parameter names to their image loading functions
+    """
+    def web_inference(data: dict=Body(...)):
+        """
+        FastAPI endpoint that runs on the class instance
+        """
+        from diffusers.utils import load_image
 
-#     try:
-#         # append result to the log file
-#         with open(log_file_path, 'a', encoding='utf-8') as f:
-#             f.write(json.dumps(result, indent=2) + '\n---\n')
-#         print(f"Result saved to: {log_file_path}")
-#     except Exception as e:
-#         print(f"Error saving to log file: {e}")
+        prompt = data.get("prompt") #prompt always required
+        if not prompt:
+            return{
+                "error": "A 'prompt' is required"
+            }
+        
+        negative_prompt = data.get("negative_prompt", "")
 
+        args = []
+
+        if image_params:
+            for param_name, load_func in image_params.items():
+                param_value = data.get(param_name)
+                if param_value:
+                    if load_func == "load_image":
+                        param_value = load_image(param_value)
+                    elif callable(load_func):
+                        param_value = load_func(param_value)
+                args.append(param_value)
+
+                #check if required
+                if required_params and param_name in required_params and not param_value:
+                    return {"error": f"A '{param_name}' is required."}
+        
+        args.extend([prompt, negative_prompt])
+        
+        # Log the parameters
+        print(f"prompt: {prompt}")
+        if image_params:
+            for param_name in image_params.keys():
+                param_value = data.get(param_name)
+                if param_value:
+                    print(f"{param_name}: {param_value}")
+        print(f"negative prompt: {negative_prompt}")
+        
+        # Call the generate method
+        call = generate_method.spawn(*args)
+        
+        return JSONResponse({"call_id": call.object_id})
+    
+    return web_inference
+
+def prepare_video_and_mask(img: PIL.Image.Image, height: int, width: int, num_frames: int, last_frame: PIL.Image.Image=None):
+    img = img.resize((width, height))
+    frames = [img]
+    # Ideally, this should be 127.5 to match original code, but they perform computation on numpy arrays
+    # whereas we are passing PIL images. If you choose to pass numpy arrays, you can set it to 127.5 to
+    # match the original code.
+    if last_frame is None:
+        frames.extend([PIL.Image.new("RGB", (width, height), (128, 128, 128))] * (num_frames - 1))
+    else:
+        frames.extend([PIL.Image.new("RGB", (width, height), (128, 128, 128))] * (num_frames - 2))
+        last_img = last_frame.resize((width, height))
+        frames.append(last_img)
+
+    mask_black = PIL.Image.new("L", (width, height), 0)
+    mask_white = PIL.Image.new("L", (width, height), 255)
+    if last_frame is None:
+        mask = [mask_black, *[mask_white] * (num_frames - 1)]
+    else:
+        mask = [mask_black, *[mask_white] * (num_frames - 2), mask_black]
+    return frames, mask

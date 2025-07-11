@@ -9,7 +9,7 @@ from .base import GPUType, ModalProviderBase
 from typing import Any, Dict
 from ...core.jobs import JobStatus
 from ...core.registry import registry
-from ...core.utils import check_modal_app_deployment, Generation
+from ...core.utils import check_modal_app_deployment, Generation, create_web_inference_endpoint, prepare_video_and_mask
 
 # --- Configuration ---
 APP_NAME = "test-wan-2.1-vace-t2v-14b"
@@ -50,26 +50,66 @@ outputs_volume = modal.Volume.from_name(OUTPUTS_NAME, create_if_missing=True)
 
 app = modal.App(APP_NAME)
 
-def prepare_video_and_mask(img: PIL.Image.Image, height: int, width: int, num_frames: int, last_frame: PIL.Image.Image=None):
-    img = img.resize((width, height))
-    frames = [img]
-    # Ideally, this should be 127.5 to match original code, but they perform computation on numpy arrays
-    # whereas we are passing PIL images. If you choose to pass numpy arrays, you can set it to 127.5 to
-    # match the original code.
-    if last_frame is None:
-        frames.extend([PIL.Image.new("RGB", (width, height), (128, 128, 128))] * (num_frames - 1))
-    else:
-        frames.extend([PIL.Image.new("RGB", (width, height), (128, 128, 128))] * (num_frames - 2))
-        last_img = last_frame.resize((width, height))
-        frames.append(last_img)
+@app.cls(
+    image=image,
+    gpu=GPUType.A100_80GB.value,
+    secrets=[modal.Secret.from_name("huggingface-secret")],
+    volumes={CACHE_PATH: cache_volume, OUTPUTS_PATH: outputs_volume},
+    timeout=1200,
+    scaledown_window=900,
+)
+class WebAPI:
+    @modal.fastapi_endpoint(method="POST")
+    def web_inference(self, data: dict = Body(...)):
+        """
+        Unified FastAPI endpoint that routes to the appropriate class based on the request.
+        """
+        feature_type = data.get("feature_type")  # "text_to_video", "image_to_video", or "interpolate"
+        
+        if not feature_type:
+            return {"error": "A 'feature_type' is required. Must be one of: 'text_to_video', 'image_to_video', 'interpolate'"}
+        
+        # Route to appropriate class
+        if feature_type == "text_to_video":
+            return T2V.handle_web_inference(data)
+        elif feature_type == "image_to_video":
+            return I2V.handle_web_inference(data)
+        elif feature_type == "interpolate":
+            return Interpolate.handle_web_inference(data)
+        else:
+            return {"error": f"Unknown feature_type: {feature_type}. Must be one of: 'text_to_video', 'image_to_video', 'interpolate'"}
 
-    mask_black = PIL.Image.new("L", (width, height), 0)
-    mask_white = PIL.Image.new("L", (width, height), 255)
-    if last_frame is None:
-        mask = [mask_black, *[mask_white] * (num_frames - 1)]
-    else:
-        mask = [mask_black, *[mask_white] * (num_frames - 2)]
-    return frames, mask
+    @modal.fastapi_endpoint(method="GET")
+    def get_result(self, call_id: str, feature_type: str = None):
+        """
+        Unified FastAPI endpoint to poll for results from any class.
+        """
+        import io
+        from modal import FunctionCall
+        
+        print(f"Polling for call_id: {call_id}, feature_type: {feature_type}")
+        
+        try:
+            call = FunctionCall.from_id(call_id)
+            video_bytes = call.get(timeout=0)  # Use a short timeout to check for completion
+        except TimeoutError:
+            return JSONResponse({"status": "processing"}, status_code=202)
+        except Exception as e:
+            print(f"Error fetching result for {call_id}: {e}")
+            return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
+        
+        # Determine filename based on feature type
+        if feature_type == "text_to_video":
+            filename = f"wan2.1-vace-t2v-output_{call_id}.mp4"
+        elif feature_type == "image_to_video":
+            filename = f"wan2.1-vace-i2v-output_{call_id}.mp4"
+        elif feature_type == "interpolate":
+            filename = f"wan2.1-vace-interpolate-output_{call_id}.mp4"
+        else:
+            filename = f"wan2.1-vace-output_{call_id}.mp4"
+        
+        headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
+        return StreamingResponse(io.BytesIO(video_bytes), media_type="video/mp4", headers=headers)
 
 @app.cls(
     image=image,
@@ -125,45 +165,23 @@ class T2V:
             video_bytes = f.read()
 
         return video_bytes 
-    @modal.fastapi_endpoint(method="POST")
-    def web_inference(self, data: dict = Body(...)):
-        """
-        FastAPI endpoint that runs on the class instance
-        """
+    @staticmethod
+    def handle_web_inference(data: dict):
+        """Handle text-to-video generation."""
         prompt = data.get("prompt")
         negative_prompt = data.get("negative_prompt", "")
-
+        
         if not prompt:
             return {"error": "A 'prompt' is required."}
         
-        print(f"prompt: {prompt}")
-        print(f"negative prompt: {negative_prompt}")
-
-        call = self.generate.spawn(prompt, negative_prompt)
-
-        return JSONResponse({"call_id": call.object_id})
-    @modal.fastapi_endpoint(method="GET")
-    def get_result(self, call_id: str):
-        """
-        FastAPI endpoint to poll for the result of a generation call.
-        """
-        import io
-        from datetime import datetime
-        from modal import FunctionCall
-
-        print(f"Polling for call_id: {call_id}")
-        try:
-            call = FunctionCall.from_id(call_id)
-            video_bytes = call.get(timeout=0) # Use a short timeout to check for completion
-        except TimeoutError:
-            return JSONResponse({"status": "processing"}, status_code=202)
-        except Exception as e:
-            print(f"Error fetching result for {call_id}: {e}")
-            return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
-
-        filename = f"wan2.1-output_{call_id}.mp4"
-        headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
-        return StreamingResponse(io.BytesIO(video_bytes), media_type="video/mp4", headers=headers)
+        print(f"text_to_video - prompt: {prompt}")
+        print(f"text_to_video - negative prompt: {negative_prompt}")
+        
+        # Create T2V instance and call generate
+        t2v_instance = T2V()
+        call = t2v_instance.generate.spawn(prompt, negative_prompt)
+        
+        return JSONResponse({"call_id": call.object_id, "feature_type": "text_to_video"})
 
 class Wan21VaceTextToVideo14B(ModalProviderBase):
     def __init__(self, api_key=None):
@@ -174,6 +192,9 @@ class Wan21VaceTextToVideo14B(ModalProviderBase):
     def _prepare_payload(self, prompt: str, **kwargs) -> Dict[str, Any]:
         """Prepare payload specific to Wan2.1 Vace model."""
         payload = super()._prepare_payload(prompt, **kwargs)
+        
+        # Add feature_type for routing
+        payload["feature_type"] = "text_to_video"
         
         # Add negative_prompt if provided
         negative_prompt = kwargs.get('negative_prompt', '')
@@ -252,50 +273,32 @@ class I2V:
             video_bytes = f.read()
 
         return video_bytes
-    @modal.fastapi_endpoint(method="POST")
-    def web_inference(self, data: dict = Body(...)):
-        """
-        FastAPI endpoint that runs on the class instance
-        """
+    @staticmethod
+    def handle_web_inference(data: dict):
+        """Handle image-to-video generation."""
         from diffusers.utils import load_image
+        
         prompt = data.get("prompt")
-        image = load_image(data.get("image_bytes"))
+        image_bytes = data.get("image_bytes")
         negative_prompt = data.get("negative_prompt", "")
-
+        
         if not prompt:
             return {"error": "A 'prompt' is required."}
-        if not image:
-            return {"error": "An 'image' is required."}
+        if not image_bytes:
+            return {"error": "An 'image_bytes' is required."}
         
-        print(f"prompt: {prompt}")
-        print(f"image: {image}")
-        print(f"negative prompt: {negative_prompt}")
-
-        call = self.generate.spawn(image, prompt, negative_prompt)
-
-        return JSONResponse({"call_id": call.object_id})
-    @modal.fastapi_endpoint(method="GET")
-    def get_result(self, call_id: str):
-        """
-        FastAPI endpoint to poll for the result of a generation call.
-        """
-        import io
-        from datetime import datetime
-        from modal import FunctionCall
-
-        print(f"Polling for call_id: {call_id}")
-        try:
-            call = FunctionCall.from_id(call_id)
-            video_bytes = call.get(timeout=0) # Use a short timeout to check for completion
-        except TimeoutError:
-            return JSONResponse({"status": "processing"}, status_code=202)
-        except Exception as e:
-            print(f"Error fetching result for {call_id}: {e}")
-            return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
-
-        filename = f"wan2.1-vace-output_{call_id}.mp4"
-        headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
-        return StreamingResponse(io.BytesIO(video_bytes), media_type="video/mp4", headers=headers)
+        # Load the image
+        image = load_image(image_bytes)
+        
+        print(f"image_to_video - prompt: {prompt}")
+        print(f"image_to_video - image: {image}")
+        print(f"image_to_video - negative prompt: {negative_prompt}")
+        
+        # Create I2V instance and call generate
+        i2v_instance = I2V()
+        call = i2v_instance.generate.spawn(image, prompt, negative_prompt)
+        
+        return JSONResponse({"call_id": call.object_id, "feature_type": "image_to_video"})
 
 class Wan21VaceImageToVideo14B(ModalProviderBase):
     def __init__(self, api_key=None):
@@ -303,6 +306,24 @@ class Wan21VaceImageToVideo14B(ModalProviderBase):
         self.app_name = APP_NAME
         self.modal_app = app
         self.modal_class_name = "I2V"
+    def _prepare_payload(self, prompt: str, **kwargs) -> Dict[str, Any]:
+        """Prepare payload specific to Wan2.1 Vace Image-to-Video model."""
+        payload = super()._prepare_payload(prompt, **kwargs)
+        
+        # Add feature_type for routing
+        payload["feature_type"] = "image_to_video"
+        
+        # Add image_bytes if provided
+        image_bytes = kwargs.get('image_bytes')
+        if image_bytes:
+            payload["image_bytes"] = image_bytes
+            
+        # Add negative_prompt if provided
+        negative_prompt = kwargs.get('negative_prompt', '')
+        if negative_prompt:
+            payload["negative_prompt"] = negative_prompt
+            
+        return payload
    
 @app.cls(
     image=image,
@@ -365,52 +386,35 @@ class Interpolate:
             video_bytes = f.read()
 
         return video_bytes
-    @modal.fastapi_endpoint(method="POST")
-    def web_inference(self, data: dict = Body(...)):
-        """
-        FastAPI endpoint that runs on the class instance
-        """
+    @staticmethod
+    def handle_web_inference(data: dict):
+        """Handle frame interpolation."""
         from diffusers.utils import load_image
+        
         prompt = data.get("prompt")
-        first_frame = load_image(data.get("first_frame"))
-        last_frame = load_image(data.get("last_frame"))
+        first_frame = data.get("first_frame")
+        last_frame = data.get("last_frame")
         negative_prompt = data.get("negative_prompt", "")
-
+        
         if not prompt:
             return {"error": "A 'prompt' is required."}
         if not first_frame or not last_frame:
-            return {"error": "A 'first_frame' and 'last_frame' is required."}
+            return {"error": "Both 'first_frame' and 'last_frame' are required."}
         
-        print(f"prompt: {prompt}")
-        print(f"first frame: {first_frame}")
-        print(f"last frame: {last_frame}")
-        print(f"negative prompt: {negative_prompt}")
-
-        call = self.generate.spawn(first_frame, last_frame, prompt, negative_prompt)
-
-        return JSONResponse({"call_id": call.object_id})
-    @modal.fastapi_endpoint(method="GET")
-    def get_result(self, call_id: str):
-        """
-        FastAPI endpoint to poll for the result of a generation call.
-        """
-        import io
-        from datetime import datetime
-        from modal import FunctionCall
-
-        print(f"Polling for call_id: {call_id}")
-        try:
-            call = FunctionCall.from_id(call_id)
-            video_bytes = call.get(timeout=0) # Use a short timeout to check for completion
-        except TimeoutError:
-            return JSONResponse({"status": "processing"}, status_code=202)
-        except Exception as e:
-            print(f"Error fetching result for {call_id}: {e}")
-            return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
-
-        filename = f"wan2.1-vace-interpolate-output_{call_id}.mp4"
-        headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
-        return StreamingResponse(io.BytesIO(video_bytes), media_type="video/mp4", headers=headers)
+        # Load the images
+        first_img = load_image(first_frame)
+        last_img = load_image(last_frame)
+        
+        print(f"interpolate - prompt: {prompt}")
+        print(f"interpolate - first frame: {first_img}")
+        print(f"interpolate - last frame: {last_img}")
+        print(f"interpolate - negative prompt: {negative_prompt}")
+        
+        # Create Interpolate instance and call generate
+        interpolate_instance = Interpolate()
+        call = interpolate_instance.generate.spawn(first_img, last_img, prompt, negative_prompt)
+        
+        return JSONResponse({"call_id": call.object_id, "feature_type": "interpolate"})
 
 class Wan21VaceInterpolate14B(ModalProviderBase):
     def __init__(self, api_key=None):
@@ -421,12 +425,14 @@ class Wan21VaceInterpolate14B(ModalProviderBase):
     def _prepare_payload(self, prompt: str, **kwargs) -> Dict[str, Any]:
         """Prepare payload specific to Wan2.1 Vace Interpolate model."""
         payload = {"prompt": prompt}
+
+        payload["feature_type"] = "interpolate"
         
-        # Add first_frame and last_frame if provided
-        first_frame = kwargs.get('first_frame')
+        # Add start_frame and last_frame if provided
+        start_frame = kwargs.get('start_frame')
         last_frame = kwargs.get('last_frame')
-        if first_frame:
-            payload["first_frame"] = first_frame
+        if start_frame:
+            payload["first_frame"] = start_frame
         if last_frame:
             payload["last_frame"] = last_frame
         

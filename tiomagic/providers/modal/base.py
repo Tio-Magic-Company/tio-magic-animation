@@ -318,13 +318,20 @@ class ModalProviderBase:
             
             # Get Modal class and web URLs
             print("app name: ", self.app_name)
-            print("modal class name: ", self.modal_class_name)
-            modal_class = modal.Cls.from_name(self.app_name, self.modal_class_name)
-            print("modal instance, ", modal_class)
+            # print("modal class name: ", self.modal_class_name)
+            # modal_class = modal.Cls.from_name(self.app_name, self.modal_class_name)
+            # print("modal instance, ", modal_class)
             
-            web_inference_url = modal_class().web_inference.get_web_url()
-            print("web_url: ", web_inference_url)
-            
+            # web_inference_url = modal_class().web_inference.get_web_url()
+            # print("web_url: ", web_inference_url)
+
+            # Get Modal WebAPI class
+            modal_web_api_class = modal.Cls.from_name(self.app_name, 'WebAPI')
+            print('modal instance', modal_web_api_class)
+
+            web_inference_url = modal_web_api_class().web_inference.get_web_url()
+            print("web url: ", web_inference_url)
+
             # Prepare request payload
             payload = self._prepare_payload(prompt, **kwargs)
             
