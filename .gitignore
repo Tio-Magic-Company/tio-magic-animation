@@ -7,3 +7,5 @@ generation_log.json
 generation_log.txt
 *.mp4
 tm_animate/
+start.png
+end.png

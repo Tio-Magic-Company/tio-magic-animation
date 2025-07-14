@@ -9,7 +9,7 @@ from .base import GPUType, ModalProviderBase
 from typing import Any, Dict
 from ...core.jobs import JobStatus
 from ...core.registry import registry
-from ...core.utils import check_modal_app_deployment, Generation, create_web_inference_endpoint, prepare_video_and_mask
+from ...core.utils import check_modal_app_deployment, Generation, prepare_video_and_mask, load_image_robust, is_local_path, local_image_to_base64
 
 # --- Configuration ---
 APP_NAME = "test-wan-2.1-vace-t2v-14b"
@@ -64,6 +64,7 @@ class WebAPI:
         """
         Unified FastAPI endpoint that routes to the appropriate class based on the request.
         """
+        print("DATA OF WEB INFERENCE, ", data)
         feature_type = data.get("feature_type")  # "text_to_video", "image_to_video", or "interpolate"
         
         if not feature_type:
@@ -276,24 +277,27 @@ class I2V:
     @staticmethod
     def handle_web_inference(data: dict):
         """Handle image-to-video generation."""
-        from diffusers.utils import load_image
         
         prompt = data.get("prompt")
-        image_bytes = data.get("image_bytes")
+        image = data.get("image")
         negative_prompt = data.get("negative_prompt", "")
         
         if not prompt:
             return {"error": "A 'prompt' is required."}
-        if not image_bytes:
-            return {"error": "An 'image_bytes' is required."}
+        if not image:
+            return {"error": "An 'image' is required."}
+        print("image: ", image)
         
-        # Load the image
-        image = load_image(image_bytes)
+        # print(f"image_to_video - prompt: {prompt}")
+        # print(f"image_to_video - image: {image}")
+        # print(f"image_to_video - negative prompt: {negative_prompt}")
         
-        print(f"image_to_video - prompt: {prompt}")
-        print(f"image_to_video - image: {image}")
-        print(f"image_to_video - negative prompt: {negative_prompt}")
-        
+        try:
+            print("loading image to PIL.Image.Image format...")
+            image = load_image_robust(image)
+        except Exception as e:
+            return {"error": f"Error processing images: {str(e)}"}
+
         # Create I2V instance and call generate
         i2v_instance = I2V()
         call = i2v_instance.generate.spawn(image, prompt, negative_prompt)
@@ -306,23 +310,18 @@ class Wan21VaceImageToVideo14B(ModalProviderBase):
         self.app_name = APP_NAME
         self.modal_app = app
         self.modal_class_name = "I2V"
-    def _prepare_payload(self, prompt: str, **kwargs) -> Dict[str, Any]:
+    def _prepare_payload(self, required_args: Dict[str, Any], **kwargs) -> Dict[str, Any]:
         """Prepare payload specific to Wan2.1 Vace Image-to-Video model."""
-        payload = super()._prepare_payload(prompt, **kwargs)
-        
-        # Add feature_type for routing
+
+        payload = super()._prepare_payload(required_args, **kwargs)
         payload["feature_type"] = "image_to_video"
         
-        # Add image_bytes if provided
-        image_bytes = kwargs.get('image_bytes')
-        if image_bytes:
-            payload["image_bytes"] = image_bytes
-            
-        # Add negative_prompt if provided
-        negative_prompt = kwargs.get('negative_prompt', '')
-        if negative_prompt:
-            payload["negative_prompt"] = negative_prompt
-            
+        # verify required arguments
+        if payload['image'] is None:
+            raise ValueError("Argument 'image' is required for Image to Video generation")
+        
+        if is_local_path(payload['image']):
+            payload['image'] = local_image_to_base64(payload['image'])
         return payload
    
 @app.cls(
@@ -388,9 +387,8 @@ class Interpolate:
         return video_bytes
     @staticmethod
     def handle_web_inference(data: dict):
-        """Handle frame interpolation."""
-        from diffusers.utils import load_image
-        
+        """Handle frame interpolation."""  
+
         prompt = data.get("prompt")
         first_frame = data.get("first_frame")
         last_frame = data.get("last_frame")
@@ -401,18 +399,21 @@ class Interpolate:
         if not first_frame or not last_frame:
             return {"error": "Both 'first_frame' and 'last_frame' are required."}
         
-        # Load the images
-        first_img = load_image(first_frame)
-        last_img = load_image(last_frame)
+        try:
+            # load_image_robust can handle both URLs and base64 strings
+            first_frame = load_image_robust(first_frame)
+            last_frame = load_image_robust(last_frame)            
+        except Exception as e:
+            return {"error": f"Error processing images: {str(e)}"}
         
-        print(f"interpolate - prompt: {prompt}")
-        print(f"interpolate - first frame: {first_img}")
-        print(f"interpolate - last frame: {last_img}")
-        print(f"interpolate - negative prompt: {negative_prompt}")
+        # print(f"interpolate - prompt: {prompt}")
+        # print(f"interpolate - first frame: {first_frame}")
+        # print(f"interpolate - last frame: {last_frame}")
+        # print(f"interpolate - negative prompt: {negative_prompt}")
         
         # Create Interpolate instance and call generate
         interpolate_instance = Interpolate()
-        call = interpolate_instance.generate.spawn(first_img, last_img, prompt, negative_prompt)
+        call = interpolate_instance.generate.spawn(first_frame, last_frame, prompt, negative_prompt)
         
         return JSONResponse({"call_id": call.object_id, "feature_type": "interpolate"})
 
@@ -422,25 +423,25 @@ class Wan21VaceInterpolate14B(ModalProviderBase):
         self.app_name = APP_NAME
         self.modal_app = app
         self.modal_class_name = "Interpolate"
-    def _prepare_payload(self, prompt: str, **kwargs) -> Dict[str, Any]:
-        """Prepare payload specific to Wan2.1 Vace Interpolate model."""
-        payload = {"prompt": prompt}
-
+    def _prepare_payload(self, required_args: Dict[str, Any], **kwargs) -> Dict[str, Any]:
+        """
+        Prepare payload specific to Wan2.1 Vace Interpolate model.
+        Break out required args into payload
+        """
+        payload = super()._prepare_payload(required_args, **kwargs)
+        # payload = {"prompt": required_args['prompt']}
         payload["feature_type"] = "interpolate"
         
-        # Add start_frame and last_frame if provided
-        start_frame = kwargs.get('start_frame')
-        last_frame = kwargs.get('last_frame')
-        if start_frame:
-            payload["first_frame"] = start_frame
-        if last_frame:
-            payload["last_frame"] = last_frame
-        
-        # Add negative_prompt if provided
-        negative_prompt = kwargs.get('negative_prompt', '')
-        if negative_prompt:
-            payload["negative_prompt"] = negative_prompt
-            
+        if payload['first_frame'] is None or payload['last_frame'] is None:
+            raise ValueError("Arguments 'first_frame' and 'last_frame' are required for Interpolation Video generation")
+
+        if is_local_path(payload['first_frame']):
+            # Convert local image to base64
+            payload["first_frame"] = local_image_to_base64(payload['first_frame'])
+        if is_local_path(payload['last_frame']):
+            # Convert local image to base64
+            payload["last_frame"] = local_image_to_base64(payload['last_frame'])
+    
         return payload
 
 # Register with the system registry

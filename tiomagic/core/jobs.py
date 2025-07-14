@@ -111,17 +111,6 @@ class Job:
     def from_dict(cls, data: Dict) -> 'Job':
         """create job from dictionary"""
         return cls(**data)
-        # job = cls(
-        #     job_id=data["job_id"],
-        #     feature=data["feature"],
-        #     model=data["model"], 
-        #     provider=data["provider"],
-        #     generation=data["generation"],
-        #     creation_time=data["creation_time"],
-        #     last_updated=data["last_updated"],
-        #     error=data.get("error")
-        # )
-        # return job
 
     def start(self, func):
         """Start the job execution asynchronously

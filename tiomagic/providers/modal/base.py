@@ -28,235 +28,14 @@ class GPUType(str, Enum):
     L4 = "L4"
     T4 = "T4"
 
-class ModalBase:
-    """Base class for Modal model implementations
-    
-    This class defines the contract that all Modal implementations must follow.
-    It provides common utilities and standardized methods for Modal deployment.
-    """
-    
-    # Class constants to be overridden by subclasses
-    APP_NAME: str = None                # Modal app name
-    MODEL_ID: str = None                # HuggingFace model ID
-    GPU_CONFIG: GPUType = GPUType.A10G  # Default GPU type
-    CACHE_DIR: str = "/cache"           # Path to cache directory
-    OUTPUTS_DIR: str = "/outputs"       # Path to outputs directory
-    TIMEOUT: int = 600                  # Container timeout in seconds
-    SCALEDOWN_WINDOW: int = 900         # Container scaledown window in seconds
-
-    def __init__(self, api_key: Optional[str] = None):
-        """Initialize the Modal base class.
-        
-        Args:
-            api_key: Optional Modal API key. If not provided, will use environment variables.
-        """
-        if api_key:
-            os.environ["MODAL_TOKEN_ID"] = api_key.split(":")[0]
-            os.environ["MODAL_TOKEN_SECRET"] = api_key.split(":")[1]
-            
-        self._validate_class_constants()
-        self.outputs_path = Path(self.OUTPUTS_DIR)
-        self._setup_modal_resources()
-    
-    def _validate_class_constants(self):
-        """Validate that required class constants are defined."""
-        if not self.APP_NAME:
-            raise ValueError("Subclass must define APP_NAME")
-        if not self.MODEL_ID:
-            raise ValueError("Subclass must define MODEL_ID")
-    
-    def _setup_modal_resources(self):
-        """Set up Modal app, image, volumes and other resources."""
-        # Create volumes for cache and outputs
-        cache_volume_name = f"{self.APP_NAME}-cache"
-        outputs_volume_name = f"{self.APP_NAME}-outputs" 
-        
-        cache_volume = modal.Volume.from_name(
-            cache_volume_name, create_if_missing=True
-        )
-        outputs_volume = modal.Volume.from_name(
-            outputs_volume_name, create_if_missing=True
-        )
-        
-        # Set up the Modal image with required dependencies
-        image = self._build_image()
-        
-        # Create the Modal app
-        app = modal.App(
-            self.APP_NAME,
-            image=image,
-            secrets=[modal.Secret.from_name("huggingface-secret")]
-        )
-        
-        # Store references
-        self.cache_volume = cache_volume
-        self.outputs_volume = outputs_volume
-        self.image = image
-        self.app = app
-        
-        # Get the implementation class defined in the module
-        # print(f"**APP NAME: , {self.APP_NAME}")
-        # self._get_modal_class()
-
-    def _build_image(self) -> modal.Image:
-        """Build the base Modal image with required dependencies.
-        
-        This method can be overridden by subclasses to add model-specific dependencies.
-        
-        Returns:
-            modal.Image: The Modal image
-        """
-        return modal.Image.debian_slim(python_version="3.11").env({"HF_HUB_CACHE": self.CACHE_DIR})
-    
-    # def _get_modal_class(self):
-        """Look for and validate the Modal implementation class in the module.
-        
-        This method finds the Modal class that should be defined at the module level
-        in the subclass's module. It will try to find either:
-        1. A class with the specific name derived from APP_NAME
-        2. Any class with Modal decorators in the module
-        
-        Raises:
-            ValueError: If no suitable Modal implementation class is found
-        """
-        # import sys
-        # import inspect
-        
-        # Get the module where the subclass is defined
-        # module = sys.modules[self.__class__.__module__]
-        
-        # # Expected class name based on APP_NAME
-        # expected_class_name = self.APP_NAME.replace("-", "_").title() + "Implementation"
-        # print("expected class name: ", expected_class_name)
-        
-        # Find all classes in the module that have Modal decorators
-        # modal_classes = []
-        # for name, obj in inspect.getmembers(module, inspect.isclass):
-        #     print("NAME: ", name, "OBJ: ", obj, hasattr(obj, 'model_implementation'))
-        #     # Check if it has Modal's cls decorator
-        #     if hasattr(obj, 'cls_id') or hasattr(obj, 'cls_decorator_kwargs'):
-        #         modal_classes.append((name, obj))
-                
-                # If this class matches the expected name, use it
-                # if name == expected_class_name:
-                #     self.model_implementation = obj
-                #     return
-        
-        # If we didn't find the expected class but found other Modal classes
-        # if modal_classes:
-        #     class_name, cls = modal_classes[0]
-        #     print(f"Warning: Using Modal class '{class_name}' instead of expected '{expected_class_name}'")
-        #     self.model_implementation = cls
-        #     return
-            
-        # No Modal classes found
-        # available_classes = ", ".join(name for name, _ in inspect.getmembers(module, inspect.isclass))
-        # raise ValueError(
-        #     f"No Modal implementation class found in {self.__class__.__module__}. "
-        #     f"Expected class '{expected_class_name}' with @app.cls decorator. "
-        #     f"Available classes: {available_classes}. "
-        #     f"Please define a Modal class at the module level with the "
-        #     f"@app.cls decorator and the required Modal methods."
-        # )
-    
-    def _validate_web_inputs(self, data: dict) -> dict:
-        """Validate inputs from web API.
-        
-        Subclasses can override this to provide custom validation.
-        
-        Args:
-            data: Input data from web API
-            
-        Returns:
-            dict: Validated inputs or error response
-        """
-        # Check for required prompt
-        if "prompt" not in data:
-            return {"error": "A 'prompt' field is required."}
-        
-        return data
-    
-    @abstractmethod
-    def _load_pipeline(self, start_time: float) -> Any:
-        """Load and return the model pipeline.
-        
-        This method must be implemented by subclasses to load the model pipeline.
-        The timer is provided to allow for logging of load times.
-        
-        Args:
-            start_time: Start time for loading models (for logging purposes)
-            
-        Returns:
-            Any: The model pipeline object
-        """
-        pass
-    
-    @abstractmethod
-    def _run_generation(self, pipeline: Any, **kwargs) -> Union[bytes, str, Path]:
-        """Run generation using the loaded pipeline.
-        
-        This method must be implemented by subclasses to run the model.
-        
-        Args:
-            pipeline: The loaded model pipeline from _load_pipeline
-            **kwargs: Generation parameters
-            
-        Returns:
-            Union[bytes, str, Path]: Generated content or path to generated file
-        """
-        pass
-
-    def _get_result_filename(self, call_id: str) -> str:
-        """Get filename for the generated result.
-        
-        Subclasses can override this to provide custom filenames.
-        
-        Args:
-            call_id: Modal function call ID
-            
-        Returns:
-            str: Filename for the result
-        """
-        app_name = self.APP_NAME.replace("-", "_")
-        return f"{app_name}_output_{call_id}.mp4"
-    
-    def _get_result_media_type(self) -> str:
-        """Get media type for the generated result.
-        
-        Subclasses can override this to provide custom media types.
-        
-        Returns:
-            str: Media type string
-        """
-        return "video/mp4"
-    
-    def generate(self, prompt: str, **kwargs) -> bytes:
-        """Generate content using the model.
-        
-        This is the main entry point for generation.
-        
-        Args:
-            prompt: Text prompt
-            **kwargs: Additional parameters
-            
-        Returns:
-            bytes: Generated content
-        """
-        # Create a Modal function call to the implementation
-        instance = self.model_implementation()
-        
-        # Pass the base instance for access to methods
-        setattr(instance, "_outer_self", self)
-        
-        # Call the generate method on the Modal class
-        return instance.generate.remote(prompt=prompt, **kwargs)
-    
-    def deploy(self):
-        """Deploy the Modal app.
-        
-        This method deploys the app to Modal.
-        """
-        self.app.deploy()
+    # # Class constants to be overridden by subclasses
+    # APP_NAME: str = None                # Modal app name
+    # MODEL_ID: str = None                # HuggingFace model ID
+    # GPU_CONFIG: GPUType = GPUType.A10G  # Default GPU type
+    # CACHE_DIR: str = "/cache"           # Path to cache directory
+    # OUTPUTS_DIR: str = "/outputs"       # Path to outputs directory
+    # TIMEOUT: int = 600                  # Container timeout in seconds
+    # SCALEDOWN_WINDOW: int = 900         # Container scaledown window in seconds
 
 class ModalProviderBase:
     """
@@ -281,12 +60,12 @@ class ModalProviderBase:
         if not self.modal_class_name:
             raise ValueError("Subclass must set modal_class_name")
     
-    def generate(self, prompt: str, **kwargs) -> Dict[str, Any]:
+    def generate(self, required_args: Dict[str, Any] = None, **kwargs) -> Dict[str, Any]:
         """
         Generate content using Modal web inference.
         This is the main entry point for generation that creates a Modal instance.
         Args:
-            prompt: The generation prompt
+            required_args: The generation prompt
             **kwargs: Additional generation parameters
             
         Returns:
@@ -295,12 +74,12 @@ class ModalProviderBase:
         self._validate_config()
 
         from datetime import datetime
-        print(f"Running {self.app_name} generate with prompt: {prompt}")
+        print(f"Running {self.app_name} generate with prompt: {required_args['prompt']}")
         
         generation = Generation(
             timestamp=datetime.now().strftime("%Y%m%d_%H%M%S"),
-            prompt=prompt,
-            optional_parameters=kwargs
+            required_args=required_args,
+            optional_args=kwargs
         )
 
         try:
@@ -333,7 +112,8 @@ class ModalProviderBase:
             print("web url: ", web_inference_url)
 
             # Prepare request payload
-            payload = self._prepare_payload(prompt, **kwargs)
+            payload = self._prepare_payload(required_args, **kwargs)
+            print("payload: ", payload)
             
             # Make web inference request
             call_id = self._make_web_inference_request(web_inference_url, payload, generation)
@@ -351,19 +131,25 @@ class ModalProviderBase:
             generation.update(message=f"Error in generate: {str(e)}")
             raise
 
-    def _prepare_payload(self, prompt: str, **kwargs) -> Dict[str, Any]:
+    def _prepare_payload(self, required_args: Dict[str, Any], **kwargs) -> Dict[str, Any]:
         """Prepare the payload for web inference request.
         
         Args:
-            prompt: The generation prompt
+            required_args: The required arguments of the model
             **kwargs: Additional parameters
             
         Returns:
             Dict containing the request payload
         """
         # Base payload - subclasses can override to add model-specific parameters
-        payload = {"prompt": prompt}
+        if required_args is None or required_args['prompt'] is None:
+            raise ValueError("required_args and prompt are required")
+                    
+        payload = {"prompt": required_args['prompt']}            
         
+        for key, value in required_args.items():
+            if value is not None:
+                payload[key] = value
         # Add optional parameters
         for key, value in kwargs.items():
             if value is not None:
@@ -385,7 +171,6 @@ class ModalProviderBase:
         from json import JSONDecodeError
         try:
             print("enter try - this may take a few minutes if it is your first time deploying" )
-            print("post payload", payload)
             response = requests.post(
                 url, 
                 json=payload,

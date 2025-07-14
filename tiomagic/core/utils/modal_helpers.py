@@ -2,15 +2,20 @@
 Modal API helper functions for checking and deploying Modal applications.
 These utilities help manage the lifecycle of Modal apps across your project.
 """
+import os
+from pathlib import Path
 import sys
 import multiprocessing
 import subprocess
 import time
 import logging
-from fastapi import Body
+from fastapi import Body, UploadFile, HTTPException
 from fastapi.responses import JSONResponse
 import requests
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, Union, List, Tuple
+import base64
+import io
+import mimetypes
 from dataclasses import dataclass, asdict
 import modal
 from modal.exception import NotFoundError
@@ -23,8 +28,8 @@ class Generation:
     status: Optional[str] = None
     message: str = ''
     timestamp: Optional[str] = None
-    prompt: Optional[str] = None
-    optional_parameters: Optional[dict] = None
+    required_args: Optional[dict] = None
+    optional_args: Optional[dict] = None
     result_video: Optional[str] = None
 
     def to_dict(self):
@@ -106,64 +111,6 @@ def check_modal_app_deployment(app, app_name) -> Dict[str, Any]:
         result['message'] = f"Error deploying Modal app: {str(e)}"
     return result
 
-"""MODAL ENDPOINTS"""
-def create_web_inference_endpoint(generate_method, required_params=None, image_params=None):
-    """
-    Create a generalized web_inference endpoint for Modal classes.
-    
-    Args:
-        generate_method: The generate method to call
-        required_params: List of required parameter names (excluding prompt)
-        image_params: Dict mapping parameter names to their image loading functions
-    """
-    def web_inference(data: dict=Body(...)):
-        """
-        FastAPI endpoint that runs on the class instance
-        """
-        from diffusers.utils import load_image
-
-        prompt = data.get("prompt") #prompt always required
-        if not prompt:
-            return{
-                "error": "A 'prompt' is required"
-            }
-        
-        negative_prompt = data.get("negative_prompt", "")
-
-        args = []
-
-        if image_params:
-            for param_name, load_func in image_params.items():
-                param_value = data.get(param_name)
-                if param_value:
-                    if load_func == "load_image":
-                        param_value = load_image(param_value)
-                    elif callable(load_func):
-                        param_value = load_func(param_value)
-                args.append(param_value)
-
-                #check if required
-                if required_params and param_name in required_params and not param_value:
-                    return {"error": f"A '{param_name}' is required."}
-        
-        args.extend([prompt, negative_prompt])
-        
-        # Log the parameters
-        print(f"prompt: {prompt}")
-        if image_params:
-            for param_name in image_params.keys():
-                param_value = data.get(param_name)
-                if param_value:
-                    print(f"{param_name}: {param_value}")
-        print(f"negative prompt: {negative_prompt}")
-        
-        # Call the generate method
-        call = generate_method.spawn(*args)
-        
-        return JSONResponse({"call_id": call.object_id})
-    
-    return web_inference
-
 def prepare_video_and_mask(img: PIL.Image.Image, height: int, width: int, num_frames: int, last_frame: PIL.Image.Image=None):
     img = img.resize((width, height))
     frames = [img]
@@ -184,3 +131,72 @@ def prepare_video_and_mask(img: PIL.Image.Image, height: int, width: int, num_fr
     else:
         mask = [mask_black, *[mask_white] * (num_frames - 2), mask_black]
     return frames, mask
+
+def is_local_path(path: str) -> bool:
+    """Check if the path is a local file path."""
+    if not isinstance(path, str):
+        return False
+    
+    # Check if it's a URL
+    if path.startswith(('http://', 'https://')):
+        return False
+    
+    # Check if it's a local file path
+    return os.path.exists(path) or Path(path).exists()
+
+def local_image_to_base64(image_path: str) -> str:
+    """Convert local image to base64 string."""
+    import PIL.Image
+    import base64
+    
+    try:
+        with open(image_path, "rb") as f:
+            image_data = f.read()
+        
+        # Convert to base64
+        base64_str = base64.b64encode(image_data).decode('utf-8')
+        
+        # Add data URL prefix for image type detection
+        # You might want to detect the actual image type here
+        return f"data:image/png;base64,{base64_str}"
+        
+    except Exception as e:
+        raise Exception(f"Failed to convert local image {image_path} to base64: {e}")
+
+def load_image_robust(image_source):
+    """Load image from URL, local path, or base64 string."""
+    from diffusers.utils import load_image
+    import base64
+    from io import BytesIO
+    import PIL.Image
+
+    try:
+        # Check if it's a web URL
+        if isinstance(image_source, str) and image_source.startswith(('http://', 'https://')):
+            print(f"Loading image from URL: {image_source}")
+            return load_image(image_source)
+        
+        # Check if it's a base64 string
+        elif isinstance(image_source, str) and image_source.startswith('data:image'):
+            print(f"Loading image from base64 data URL")
+            # Extract base64 part
+            if "," in image_source:
+                base64_str = image_source.split(",")[1]
+            else:
+                base64_str = image_source
+            
+            image_data = base64.b64decode(base64_str)
+            image = PIL.Image.open(BytesIO(image_data)).convert('RGB')
+            return image
+        
+        # Check if it's a local file path (for Modal container)
+        elif isinstance(image_source, str) and os.path.exists(image_source):
+            print(f"Loading image from local path: {image_source}")
+            return load_image(image_source)
+        
+        else:
+            raise ValueError(f"Unsupported image source format: {type(image_source)}")
+            
+    except Exception as e:
+        print(f"Error loading image from {image_source}: {e}")
+        raise
