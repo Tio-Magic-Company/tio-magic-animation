@@ -8,6 +8,7 @@ from uuid import uuid4
 from .core.registry import registry
 from .core.config import Configuration
 from .core.jobs import Job, JobStatus
+from .core.validation import validate_parameters
 
 class TioMagic:
     def __init__(self):
@@ -27,11 +28,16 @@ class TioMagic:
         implementation = self._create_implementation(impl_class, provider)
         print("implementation: ", implementation)
         
-        # Start job and return job object for tracking
-        if required_args is None or required_args['prompt'] is None:
-            print(f"Argument 'prompt' is required for text to video generation")
-            return
+        # if required_args is None or required_args['prompt'] is None:
+        #     print(f"Argument 'prompt' is required for text to video generation")
+        #     return
+        valid, params, error_msg = validate_parameters("text_to_video", model, required_args, kwargs)
+        if not valid:
+            raise ValueError(f"Parameter validation failed: {error_msg}")
         
+        print(f"Validated parameters: ", params)
+
+        # Start job and return job object for tracking
         job_id = str(uuid4())
         job = Job(
             job_id=job_id, 
@@ -43,7 +49,7 @@ class TioMagic:
         try:
 
             print(f"text to video create new job with provider {provider} and model {model}")
-            job.start(lambda: implementation.generate(required_args['prompt'], **kwargs))
+            job.start(lambda: implementation.generate(required_args, **kwargs))
             print(f"Generation started! Job ID: {job_id}")
         except Exception as e:
             job.update(status=JobStatus.FAILED)
@@ -57,9 +63,11 @@ class TioMagic:
         implementation = self._create_implementation(impl_class, provider)
         print("implementation: ", implementation)
 
-        if required_args is None or required_args['prompt'] is None or required_args['image'] is None:
-            print("Arguments 'prompt' and 'image' are required for text to video generation")
-            return 
+        valid, params, error_msg = validate_parameters("image_to_video", model, required_args, kwargs)
+        if not valid:
+            raise ValueError(f"Parameter validation failed: {error_msg}")
+        
+        print(f"Validated parameters: ", params)
 
         job_id = str(uuid4())
         job = Job(
@@ -71,9 +79,8 @@ class TioMagic:
         job.save()
         try:
             print(f"image to video create new job with provider {provider} and model {model}")
-            job.start(lambda: implementation.generate(
-                required_args, 
-                **kwargs))
+            job.start(lambda: implementation.generate(required_args, **kwargs))
+            print(f"Generation started! Job ID: {job_id}")
         except Exception as e:
             job.update(status=JobStatus.FAILED)
             print(f"Error starting generation: {e}")
@@ -86,9 +93,11 @@ class TioMagic:
         implementation = self._create_implementation(impl_class, provider)
         print("implementation: ", implementation)
 
-        if required_args is None or required_args['first_frame'] is None or required_args['last_frame'] is None or required_args['prompt'] is None:
-            print("Arguments 'prompt', 'first_frame', and 'last_frame' are required arguments for interpolate to video")
-            return
+        valid, params, error_msg = validate_parameters("text_to_video", model, required_args, kwargs)
+        if not valid:
+            raise ValueError(f"Parameter validation failed: {error_msg}")
+        
+        print(f"Validated parameters: ", params)
         
         job_id = str(uuid4())
         job = Job(
@@ -99,29 +108,12 @@ class TioMagic:
         )
         job.save()
 
-        
-        # if isinstance(required_args['first_frame'], str):
-        #     base64_str = required_args['first_frame']
-        #     if "," in base64_str:
-        #         base64_str = base64_str.split(",")[1]
-
-        #     image_data = base64.b64decode(base64_str)
-        #     image = PIL.Image.open(BytesIO(image_data))
-        #     required_args['first_frame'] = image
-        # if isinstance(required_args['last_frame'], str):
-        #     base64_str = required_args['last_frame']
-        #     if "," in base64_str:
-        #         base64_str = base64_str.split(",")[1]
-
-        #     image_data = base64.b64decode(base64_str)
-        #     image = PIL.Image.open(BytesIO(image_data))
-        #     required_args['last_frame'] = image
-        
         try:
             print(f"interpolate create new job with provider {provider} and model {model}")
             job.start(lambda: implementation.generate(
                 required_args,
                 **kwargs))
+            print(f"Generation started! Job ID: {job_id}")
         except Exception as e:
             job.update(status=JobStatus.FAILED)
             print(f"Error starting generation: {e}")

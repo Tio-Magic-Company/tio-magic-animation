@@ -2,14 +2,18 @@
 try:
     from .wan_2_1_14b import Wan21TextToVideo14B
     from .wan_2_1_vace_14b import Wan21VaceTextToVideo14B, Wan21VaceImageToVideo14B, Wan21VaceInterpolate14B
+    from .cogvideox_5b import CogVideoXTextToVideo5B
+    from .cogvideox_5b_i2v import CogVideoX5BImageToVideo
 except ImportError as e:
     import warnings
-    warnings.warn(f"Could not import Wan21TextToVideo14B: {e}")
+    warnings.warn(f"Could not import Model: {e}")
 
 # Export only the classes that should be accessible to users
 __all__ = [
     "Wan21TextToVideo14B",
     "Wan21VaceTextToVideo14B",
     "Wan21VaceImageToVideo14B",
-    "Wan21VaceInterpolate14B"
+    "Wan21VaceInterpolate14B",
+    "CogVideoXTextToVideo5B",
+    "CogVideoX5BImageToVideo",
 ]

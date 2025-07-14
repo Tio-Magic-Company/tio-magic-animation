@@ -3,6 +3,8 @@ Base class for Modal model implementations in TioMagic.
 """
 
 from abc import abstractmethod
+from fastapi import Body
+from fastapi.responses import JSONResponse, StreamingResponse
 import modal
 import os
 from typing import Any, Dict, Optional, Union
@@ -113,8 +115,8 @@ class ModalProviderBase:
 
             # Prepare request payload
             payload = self._prepare_payload(required_args, **kwargs)
-            print("payload: ", payload)
-            
+            # print("payload: ", payload)
+
             # Make web inference request
             call_id = self._make_web_inference_request(web_inference_url, payload, generation)
             if not call_id:
@@ -284,3 +286,52 @@ class ModalProviderBase:
             generation.update(message=str(error))
      
 
+class GenericWebAPI:
+    """Generic WebAPI class that can be reused across different models."""
+    
+    # Class variable to be set by subclasses
+    feature_handlers: Dict[str, Any] = {}
+    
+    @modal.fastapi_endpoint(method="POST")
+    def web_inference(self, data: dict = Body(...)):
+        print("DATA OF WEB INFERENCE, ", data)
+        feature_type = data.pop("feature_type", None)
+        
+        if not feature_type:
+            return {"error": f"A 'feature_type' is required. Must be one of: {list(self.feature_handlers.keys())}"}
+        
+        if feature_type not in self.feature_handlers:
+            return {"error": f"Unknown feature_type: {feature_type}. Must be one of: {list(self.feature_handlers.keys())}"}
+        
+        # Route to appropriate class
+        handler_class = self.feature_handlers[feature_type]
+        return handler_class.handle_web_inference(data)
+
+    @modal.fastapi_endpoint(method="GET")
+    def get_result(self, call_id: str, feature_type: str = None):
+        """
+        Unified FastAPI endpoint to poll for results from any class.
+        """
+        import io
+        from modal import FunctionCall
+        
+        print(f"Polling for call_id: {call_id}, feature_type: {feature_type}")
+        
+        try:
+            call = FunctionCall.from_id(call_id)
+            video_bytes = call.get(timeout=0)  # Use a short timeout to check for completion
+        except TimeoutError:
+            return JSONResponse({"status": "processing"}, status_code=202)
+        except Exception as e:
+            print(f"Error fetching result for {call_id}: {e}")
+            return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
+        
+        # Determine filename based on feature type
+        if feature_type in self.feature_handlers:
+            filename = f"{feature_type}-output_{call_id}.mp4"
+        else:
+            filename = f"output_{call_id}.mp4"
+        
+        headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
+        return StreamingResponse(io.BytesIO(video_bytes), media_type="video/mp4", headers=headers)
+    

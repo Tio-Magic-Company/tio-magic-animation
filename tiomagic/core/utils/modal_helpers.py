@@ -200,3 +200,7 @@ def load_image_robust(image_source):
     except Exception as e:
         print(f"Error loading image from {image_source}: {e}")
         raise
+
+def create_timestamp():
+    from datetime import datetime
+    return datetime.now().strftime("%m%d_%H%M%S")
