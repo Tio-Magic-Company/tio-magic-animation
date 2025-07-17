@@ -93,7 +93,7 @@ class TioMagic:
         implementation = self._create_implementation(impl_class, provider)
         print("implementation: ", implementation)
 
-        valid, params, error_msg = validate_parameters("text_to_video", model, required_args, kwargs)
+        valid, params, error_msg = validate_parameters("interpolate", model, required_args, kwargs)
         if not valid:
             raise ValueError(f"Parameter validation failed: {error_msg}")
         
@@ -120,7 +120,39 @@ class TioMagic:
         
         return job
 
-    
+    def pose_guidance(self, model=None, required_args: Dict[str, Any] = None, **kwargs):
+        provider = self._config.get_provider()
+        impl_class = registry.get_implementation("pose_guidance", model, provider)
+        implementation = self._create_implementation(impl_class, provider)
+        print("implementation: ", implementation)
+
+        valid, params, error_msg = validate_parameters("pose_guidance", model, required_args, kwargs)
+        if not valid:
+            raise ValueError(f"Parameter validation failed: {error_msg}")
+        
+        print(f"Validated parameters: ", params)
+
+        job_id = str(uuid4())
+        job = Job(
+            job_id=job_id,
+            feature="pose_guidance",
+            model=model,
+            provider=provider
+        )
+        job.save()
+
+        try:
+            print(f"pose guidance create new job with provider {provider} and model {model}")
+            job.start(lambda: implementation.generate(
+                required_args,
+                **kwargs))
+            print(f"Generation started! Job ID: {job_id}")
+        except Exception as e:
+            job.update(status=JobStatus.FAILED)
+            print(f"Error starting generation: {e}")
+        
+        return job
+
     def check_generation_status(self, job_id):
         job = Job.get_job(job_id)
         if not job:

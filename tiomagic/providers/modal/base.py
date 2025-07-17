@@ -30,14 +30,14 @@ class GPUType(str, Enum):
     L4 = "L4"
     T4 = "T4"
 
-    # # Class constants to be overridden by subclasses
-    # APP_NAME: str = None                # Modal app name
-    # MODEL_ID: str = None                # HuggingFace model ID
-    # GPU_CONFIG: GPUType = GPUType.A10G  # Default GPU type
-    # CACHE_DIR: str = "/cache"           # Path to cache directory
-    # OUTPUTS_DIR: str = "/outputs"       # Path to outputs directory
-    # TIMEOUT: int = 600                  # Container timeout in seconds
-    # SCALEDOWN_WINDOW: int = 900         # Container scaledown window in seconds
+# Class constants to be overridden by subclasses
+APP_NAME: str = None                # Modal app name
+MODEL_ID: str = None                # HuggingFace model ID
+GPU_CONFIG: GPUType = GPUType.A100_80GB  # Default GPU type
+CACHE_PATH: str = "/cache"           # Path to cache directory
+OUTPUTS_PATH: str = "/outputs"       # Path to outputs directory
+TIMEOUT: int = 1800                 # Container timeout in seconds
+SCALEDOWN_WINDOW: int = 900         # Container scaledown window in seconds
 
 class ModalProviderBase:
     """
@@ -256,12 +256,13 @@ class ModalProviderBase:
             Path to the saved video file
         """
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        video_filename = f"generated_video_{call_id}_{timestamp}.mp4"
+        video_filename = f"{call_id}_{timestamp}.mp4"
         
         # Get the directory of this file and save to the same directory
         current_dir = os.path.dirname(os.path.abspath(__file__))
         repo_root = os.path.dirname(os.path.dirname(os.path.dirname(current_dir)))
-        video_path = os.path.join(repo_root, video_filename)
+        output_videos_dir = os.path.join(repo_root, "output_videos")
+        video_path = os.path.join(output_videos_dir, video_filename)
         
         with open(video_path, 'wb') as f:
             f.write(video_bytes)

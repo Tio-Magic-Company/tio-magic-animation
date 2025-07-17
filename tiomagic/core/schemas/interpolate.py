@@ -1,8 +1,9 @@
 """Parameter schemas for interpolation models."""
+"""Map model to schema"""
 
 # Schema dictionary organized by model name
 SCHEMAS = {
-    "wan2.1-image-to-video-14b": {
+    "wan2.1-flf2v-14b-720p": {
         "required": {
             "prompt": {"type": str, "description": "Text prompt to guide generation"},
             "first_frame": {"type": str, "description": "Path or URL to first frame"},
@@ -56,6 +57,42 @@ SCHEMAS = {
             "callback_on_step_end": {"type": "Callable", "description": "A function called at the end of each denoising step during inference."},
             "callback_on_step_end_tensor_inputs": {"type": list, "description": "The list of tensor inputs for the callback_on_step_end function."},
             "max_sequence_length": {"type": int, "default": 512, "description": "The maximum sequence length of the text encoder."}
+        }
+    },
+    "framepack-i2v-hy": {
+        "required": {
+            # "image": {"type": "Image", "description": "The starting image for the video generation. Accepts PIL.Image, np.ndarray, or torch.Tensor."}
+            "prompt": {"type": str, "description": "Text prompt to guide generation"},
+            "first_frame": {"type": str, "description": "Path or URL to first frame"},
+            "last_frame": {"type": str, "description": "Path or URL to last frame"}
+        },
+        "optional": {
+            # "last_image": {"type": "Image", "description": "The optional ending image for the video generation, useful for image-to-image transitions."},
+            # "prompt": {"type": str, "description": "The prompt to guide video generation."},
+            "prompt_2": {"type": str, "description": "A secondary prompt for the second text encoder; defaults to the main prompt if not provided."},
+            "negative_prompt": {"type": str, "description": "The prompt to avoid during video generation."},
+            "negative_prompt_2": {"type": str, "description": "A secondary negative prompt for the second text encoder."},
+            "height": {"type": int, "default": 720, "description": "The height in pixels of the generated video."},
+            "width": {"type": int, "default": 1280, "description": "The width in pixels of the generated video."},
+            "num_frames": {"type": int, "default": 129, "description": "The number of frames in the generated video."},
+            "num_inference_steps": {"type": int, "default": 50, "description": "The number of denoising steps."},
+            "sigmas": {"type": list, "description": "Custom sigmas for the denoising scheduler."},
+            "true_cfg_scale": {"type": float, "default": 1.0, "description": "Enables true classifier-free guidance when > 1.0."},
+            "guidance_scale": {"type": float, "default": 6.0, "description": "Guidance scale to control how closely the video adheres to the prompt."},
+            "num_videos_per_prompt": {"type": int, "default": 1, "description": "The number of videos to generate per prompt."},
+            "generator": {"type": "torch.Generator", "description": "A torch.Generator to make generation deterministic."},
+            "image_latents": {"type": "torch.Tensor", "description": "Pre-encoded image latents, bypassing the VAE for the first image."},
+            "last_image_latents": {"type": "torch.Tensor", "description": "Pre-encoded image latents, bypassing the VAE for the last image."},
+            "prompt_embeds": {"type": "torch.Tensor", "description": "Pre-generated text embeddings, an alternative to 'prompt'."},
+            "pooled_prompt_embeds": {"type": "torch.FloatTensor", "description": "Pre-generated pooled text embeddings."},
+            "negative_prompt_embeds": {"type": "torch.FloatTensor", "description": "Pre-generated negative text embeddings, an alternative to 'negative_prompt'."},
+            "negative_pooled_prompt_embeds": {"type": "torch.FloatTensor", "description": "Pre-generated negative pooled text embeddings."},
+            "output_type": {"type": str, "default": "pil", "description": "The output format of the generated video frames ('pil' or 'np.array')."},
+            "return_dict": {"type": bool, "default": True, "description": "Whether to return a HunyuanVideoFramepackPipelineOutput object instead of a plain tuple."},
+            "attention_kwargs": {"type": dict, "description": "A kwargs dictionary passed to the AttentionProcessor."},
+            "clip_skip": {"type": int, "description": "Number of final layers to skip from the CLIP model."},
+            "callback_on_step_end": {"type": "Callable", "description": "A function called at the end of each denoising step."},
+            "callback_on_step_end_tensor_inputs": {"type": list, "description": "The list of tensor inputs for the callback_on_step_end function."}
         }
     }
 

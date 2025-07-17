@@ -17,6 +17,10 @@ OUTPUTS_PATH = "/outputs"
 
 COGVIDEOX_MODEL_ID = "THUDM/CogVideoX-5b"
 
+GPU_CONFIG: GPUType = GPUType.A100_80GB
+TIMEOUT: int = 1800 # 30 minutes
+SCALEDOWN_WINDOW: int = 900 # 15 minutes
+
 image = (
     modal.Image.debian_slim(python_version="3.11")
     .apt_install("git")
@@ -46,11 +50,11 @@ app = modal.App(APP_NAME)
 
 @app.cls(
     image=image,
-    gpu=GPUType.A100_80GB.value,
+    gpu=GPU_CONFIG,
     secrets=[modal.Secret.from_name("huggingface-secret")],
     volumes={CACHE_PATH: cache_volume, OUTPUTS_PATH: outputs_volume},
-    timeout=1200,
-    scaledown_window=900,
+    timeout=TIMEOUT,
+    scaledown_window=SCALEDOWN_WINDOW,
 )
 class T2V:
     @modal.enter()
@@ -141,11 +145,11 @@ class WebAPIClass(GenericWebAPI):
 # Apply Modal decorator
 WebAPI = app.cls(
     image=image,
-    gpu=GPUType.A100_80GB.value,
+    gpu=GPU_CONFIG,
     secrets=[modal.Secret.from_name("huggingface-secret")],
     volumes={CACHE_PATH: cache_volume, OUTPUTS_PATH: outputs_volume},
-    timeout=1200,
-    scaledown_window=900,
+    timeout=TIMEOUT,
+    scaledown_window=SCALEDOWN_WINDOW,
 )(WebAPIClass)
 
 registry.register(

@@ -15,6 +15,10 @@ OUTPUTS_NAME = "test-wan-2.1-t2v-14b-outputs"
 OUTPUTS_PATH = "/outputs"
 APP_NAME = 'test-wan-2.1-text-to-video-14b'
 
+GPU_CONFIG: GPUType = GPUType.A100_80GB
+TIMEOUT: int = 1800 # 30 minutes
+SCALEDOWN_WINDOW: int = 900 # 15 minutes
+
 image = (
     modal.Image.debian_slim(python_version="3.11")
     .apt_install("git")
@@ -47,20 +51,11 @@ app = modal.App(APP_NAME)
 
 @app.cls(
     image=image,
-    gpu=GPUType.A100_80GB.value,
+    gpu=GPU_CONFIG,
     secrets=[modal.Secret.from_name("huggingface-secret")],
     volumes={CACHE_PATH: cache_volume, OUTPUTS_PATH: outputs_volume},
-    timeout=1200,
-    scaledown_window=900,
-)
-
-@app.cls(
-    image=image,
-    gpu=GPUType.H100.value,
-    secrets=[modal.Secret.from_name("huggingface-secret")],
-    volumes={CACHE_PATH: cache_volume, OUTPUTS_PATH: outputs_volume},
-    timeout=600,
-    scaledown_window=900,
+    timeout=TIMEOUT,
+    scaledown_window=SCALEDOWN_WINDOW,
 )
 class T2V:
     """
@@ -187,11 +182,11 @@ class WebAPI(GenericWebAPI):
     }
 WebAPI = app.cls(
     image=image,
-    gpu=GPUType.A100_80GB.value,
+    gpu=GPU_CONFIG,
     secrets=[modal.Secret.from_name("huggingface-secret")],
     volumes={CACHE_PATH: cache_volume, OUTPUTS_PATH: outputs_volume},
-    timeout=1200,
-    scaledown_window=900,
+    timeout=TIMEOUT,
+    scaledown_window=SCALEDOWN_WINDOW,
 )(WebAPI)
 
 # Register with the system registry

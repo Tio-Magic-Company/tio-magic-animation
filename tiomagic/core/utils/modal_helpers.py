@@ -201,6 +201,48 @@ def load_image_robust(image_source):
         print(f"Error loading image from {image_source}: {e}")
         raise
 
+def url_video_to_bytes(url: str) -> bytes:
+    import requests
+    response = requests.get(url)
+    response.raise_for_status()
+    return response.content
+
+def load_video_robust(video_source):
+    try:
+        # check if web url
+        if isinstance(video_source, str):
+            if video_source.startswith(('http://', 'https://')):
+                print(f"Loading video from URL: {video_source}")
+                return url_video_to_bytes(video_source)
+            elif video_source.startswith('data:video'):
+                print(f"Loading video from base64 data URL")
+                # Extract base64 part from data URL
+                if "," in video_source:
+                    base64_str = video_source.split(",")[1]
+                else:
+                    base64_str = video_source
+                return base64.b64decode(base64_str)
+            # Check if it's a raw base64 string (without data URL prefix)
+            elif len(video_source) > 100:  # Base64 strings are typically long
+                try:
+                    print(f"Loading video from base64 string")
+                    return base64.b64decode(video_source)
+                except Exception:
+                    # If base64 decode fails, treat as local path
+                    pass
+        # If it's already bytes, return as-is
+        elif isinstance(video_source, bytes):
+            return video_source
+        else:
+            raise ValueError(f"Unsupported video source format: {type(video_source)}")
+    except Exception as e:
+        print(f"Error loading video from {video_source}: {e}")
+        raise
+            
+            
+            
+
+
 def create_timestamp():
     from datetime import datetime
     return datetime.now().strftime("%m%d_%H%M%S")

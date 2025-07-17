@@ -1,20 +1,24 @@
 import modal
 from pathlib import Path
 from fastapi import Body
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import JSONResponse
 
 from .base import GPUType, GenericWebAPI, ModalProviderBase
 from typing import Any, Dict
 from ...core.registry import registry
 from ...core.utils import load_image_robust, is_local_path, local_image_to_base64, create_timestamp
 
-APP_NAME = "test-wan-2.1-image-to-video-14b"
+APP_NAME = "test-wan-2.1-flf2v-14b-720p"
 CACHE_NAME = f"{APP_NAME}-cache"
-CACHE_PATH = Path("/cache")
+CACHE_PATH = "/cache"
 OUTPUTS_NAME = f"{APP_NAME}-outputs"
-OUTPUTS_PATH = Path("/outputs")
+OUTPUTS_PATH = "/outputs"
 
 MODEL_ID = "Wan-AI/Wan2.1-FLF2V-14B-720P-diffusers"
+
+GPU_CONFIG: GPUType = GPUType.A100_80GB
+TIMEOUT: int = 1800 # 30 minutes
+SCALEDOWN_WINDOW: int = 900 # stay idle for 15 minutes before scaling down
 
 image = (
     modal.Image.debian_slim(python_version="3.11")
@@ -45,61 +49,15 @@ outputs_volume = modal.Volume.from_name(OUTPUTS_NAME, create_if_missing=True)
 
 app = modal.App(APP_NAME)
 
+
 @app.cls(
     image=image,
-    gpu=GPUType.A100_80GB.value,
-    volumes={CACHE_PATH: cache_volume, OUTPUTS_PATH: outputs_volume}, 
+    gpu=GPU_CONFIG,
     secrets=[modal.Secret.from_name("huggingface-secret")],
-    timeout=2400, #40 minutes
-    scaledown_window=900 #stay idle for 15 mins before scaling down
+    volumes={CACHE_PATH: cache_volume, OUTPUTS_PATH: outputs_volume},
+    timeout=TIMEOUT,
+    scaledown_window=SCALEDOWN_WINDOW,
 )
-class WebAPI:
-    @modal.fastapi_endpoint(method="POST")
-    def web_inference(self, data: dict = Body(...)):
-        """
-        Unified FastAPI endpoint that routes to the appropriate class based on the request.
-        """
-        print("DATA OF WEB INFERENCE, ", data)
-        feature_type = data.pop("feature_type", None)  # "text_to_video", "image_to_video", or "interpolate"
-        
-        if not feature_type:
-            return {"error": "A 'feature_type' is required. Must be one of: 'text_to_video', 'image_to_video', 'interpolate'"}
-        
-        # Route to appropriate class
-        if feature_type == "image_to_video":
-            return I2V.handle_web_inference(data)
-        elif feature_type == 'interpolate':
-            return Interpolate.handle_web_inference(data)
-        else:
-            return {"error": f"Unknown feature_type: {feature_type}. Must be one of: 'text_to_video', 'image_to_video', 'interpolate'"}
-
-    @modal.fastapi_endpoint(method="GET")
-    def get_result(self, call_id: str, feature_type: str = None):
-        """
-        Unified FastAPI endpoint to poll for results from any class.
-        """
-        import io
-        from modal import FunctionCall
-        
-        print(f"Polling for call_id: {call_id}, feature_type: {feature_type}")
-        
-        try:
-            call = FunctionCall.from_id(call_id)
-            video_bytes = call.get(timeout=0)  # Use a short timeout to check for completion
-        except TimeoutError:
-            return JSONResponse({"status": "processing"}, status_code=202)
-        except Exception as e:
-            print(f"Error fetching result for {call_id}: {e}")
-            return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
-        
-        # Determine filename based on feature type
-        if feature_type == "image_to_video":
-            filename = f"wan2.1-vace-i2v-output_{call_id}.mp4"
-        else:
-            filename = f"wan2.1-vace-output_{call_id}.mp4"
-        
-        headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
-        return StreamingResponse(io.BytesIO(video_bytes), media_type="video/mp4", headers=headers)
 class Interpolate:
     @modal.enter()
     def load_models(self):
@@ -136,6 +94,28 @@ class Interpolate:
             print(f"❌ {time.time() - start_time:.2f}s: An error occurred: {e}")
             raise
         print("Models loaded successfully.")
+    def aspect_ratio_resize(self, image, max_area=720 * 1280):
+        import numpy as np
+        aspect_ratio = image.height / image.width
+        mod_value = self.pipe.vae_scale_factor_spatial * self.pipe.transformer.config.patch_size[1]
+        height = round(np.sqrt(max_area * aspect_ratio)) // mod_value * mod_value
+        width = round(np.sqrt(max_area / aspect_ratio)) // mod_value * mod_value
+        image = image.resize((width, height))
+        return image, height, width
+
+    def center_crop_resize(self, image, height, width):
+        import torchvision.transforms.functional as TF
+
+        # Calculate resize ratio to match first frame dimensions
+        resize_ratio = max(width / image.width, height / image.height)
+
+        # Resize the image
+        width = round(image.width * resize_ratio)
+        height = round(image.height * resize_ratio)
+        size = [width, height]
+        image = TF.center_crop(image, size)
+
+        return image, height, width
     @modal.method()
     def generate(self, data: Dict[str, Any]):
         from diffusers.utils import export_to_video
@@ -149,6 +129,8 @@ class Interpolate:
         data['first_frame'], height, width = self.aspect_ratio_resize(first_frame)
         if last_frame.size != data['first_frame'].size:
             data['last_frame'], _, _ = self.center_crop_resize(last_frame, height, width)
+        data['image'] = data.pop('first_frame')
+        data['last_image'] = data.pop('last_frame')
         output = self.pipe(**data).frames[0]
 
         timestamp = create_timestamp()
@@ -187,7 +169,7 @@ class Interpolate:
         
         return JSONResponse({"call_id": call.object_id, "feature_type": "interpolate"})
 
-class Wan21ImageToVideoInterpolate14b(ModalProviderBase):
+class Wan21FlfvInterpolate14b720p(ModalProviderBase):
     def __init__(self, api_key=None):
         super().__init__(api_key)
         self.app_name = APP_NAME
@@ -223,18 +205,18 @@ class WebAPI(GenericWebAPI):
 # Apply Modal decorator
 WebAPI = app.cls(
     image=image,
-    gpu=GPUType.A100_80GB.value,
+    gpu=GPU_CONFIG,
     secrets=[modal.Secret.from_name("huggingface-secret")],
     volumes={CACHE_PATH: cache_volume, OUTPUTS_PATH: outputs_volume},
-    timeout=1200,
-    scaledown_window=900,
+    timeout=TIMEOUT,
+    scaledown_window=SCALEDOWN_WINDOW,
 )(WebAPI)
 
 
 registry.register(
     feature="interpolate",
-    model="wan2.1-image-to-video-14b",
+    model="wan2.1-flf2v-14b-720p",
     provider="modal",
-    implementation=Wan21ImageToVideoInterpolate14b
+    implementation=Wan21FlfvInterpolate14b720p
 )
         
