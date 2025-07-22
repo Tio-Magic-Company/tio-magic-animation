@@ -1,0 +1,96 @@
+name: Ruff CI
+
+on: 
+  pull_request:
+    branches:
+      - '**' # run on all branch pushes
+  push:
+    branches:
+      - main # run on PRs targeting main branch
+
+jobs:
+  critical-lint:
+    name: Critical Checks (Blocking)
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v3
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e ".[dev]"  # Install with dev dependencies
+    
+    - name: Critical Ruff Checks
+      run: |
+        # Check only for critical errors (exclude ignored rules)
+        ruff check . --output-format=github \
+          --select=E9,F63,F7,F82,F405,F524,F704,F706,B,S,BLE,FBT,A,C4,DTZ,T10,ICN,PIE,PT,Q,RSE,RET,SLF,SIM,TID,ARG,ERA,PGH,TRY,RUF
+  
+  # Style checks that are informational only
+  style-lint:
+    name: Style Checks (Non-blocking)
+    runs-on: ubuntu-latest
+    continue-on-error: true  # Makes this job non-blocking
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.11"  # Use one version for style checks
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e ".[dev]"
+        
+    - name: All Ruff Checks (Informational)
+      run: |
+        # Run all checks including the ones we want as warnings
+        ruff check . --output-format=github || echo "::warning::Style issues found (non-blocking)"
+        
+    - name: Format Check
+      run: |
+        ruff format --check . || echo "::warning::Formatting issues found (non-blocking)"
+        
+    - name: Docstring Coverage
+      run: |
+        # Check for missing docstrings (already ignored in critical)
+        ruff check . --select=D --output-format=github || echo "::warning::Missing docstrings (non-blocking)"
+
+# Test job that depends on critical checks
+  # test:
+  #   name: Run Tests
+  #   needs: critical-lint  # Only depends on critical checks, not style
+  #   runs-on: ubuntu-latest
+  #   strategy:
+  #     matrix:
+  #       python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
+  #   steps:
+  #   - name: Checkout code
+  #     uses: actions/checkout@v4
+      
+  #   - name: Set up Python ${{ matrix.python-version }}
+  #     uses: actions/setup-python@v4
+  #     with:
+  #       python-version: ${{ matrix.python-version }}
+  #       cache: 'pip'
+        
+  #   - name: Install dependencies
+  #     run: |
+  #       python -m pip install --upgrade pip
+  #       pip install -e ".[dev]"
+        
+  #   - name: Run tests with coverage
+  #     run: |
+  #       pytest tests/ --cov=tiomagic --cov-report=xml --cov-report=term
