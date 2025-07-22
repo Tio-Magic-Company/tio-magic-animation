@@ -32,7 +32,7 @@ class TioMagic:
         if not valid:
             raise ValueError(f"Parameter validation failed: {error_msg}")
 
-        print(f"Validated parameters: ", params)
+        print("Validated parameters: ", params)
 
         # Start job and return job object for tracking
         job_id = str(uuid4())
@@ -64,7 +64,7 @@ class TioMagic:
         if not valid:
             raise ValueError(f"Parameter validation failed: {error_msg}")
 
-        print(f"Validated parameters: ", params)
+        print("Validated parameters: ", params)
 
         job_id = str(uuid4())
         job = Job(
@@ -94,7 +94,7 @@ class TioMagic:
         if not valid:
             raise ValueError(f"Parameter validation failed: {error_msg}")
 
-        print(f"Validated parameters: ", params)
+        print("Validated parameters: ", params)
 
         job_id = str(uuid4())
         job = Job(
@@ -127,7 +127,7 @@ class TioMagic:
         if not valid:
             raise ValueError(f"Parameter validation failed: {error_msg}")
 
-        print(f"Validated parameters: ", params)
+        print("Validated parameters: ", params)
 
         job_id = str(uuid4())
         job = Job(

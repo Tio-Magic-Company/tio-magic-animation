@@ -8,8 +8,9 @@ import traceback
 from pathlib import Path
 import json
 from typing import Dict, Optional, List
-from datetime import datetime 
 import os
+
+from .utils import create_timestamp
 
 class JobStatus(str, Enum):
     QUEUED = "queued"
@@ -33,7 +34,7 @@ class Job:
 
     def __post_init__(self):
         if self.creation_time is None:
-            self.creation_time = datetime.now().strftime("%Y%m%d_%H%M%S")
+            self.creation_time = create_timestamp()
         if self.last_updated is None:
             self.last_updated = self.creation_time
 

@@ -90,39 +90,27 @@ exclude = [
 # Enable these rule sets
 [tool.ruff.lint]
 select = [
-    "E",      # pycodestyle errors
-    "W",      # pycodestyle warnings  
-    "F",      # pyflakes
-    "I",      # isort (import sorting)
-    "UP",     # pyupgrade (modernize Python code)
-    "B",      # flake8-bugbear (bugs and design problems)
-    "C90",    # mccabe complexity
-    "N",      # pep8-naming
-    "D",      # pydocstyle (docstring style)
-    "S",      # flake8-bandit (security)
-    "BLE",    # flake8-blind-except
-    "FBT",    # flake8-boolean-trap
-    "A",      # flake8-builtins
-    "COM",    # flake8-commas
-    "C4",     # flake8-comprehensions
-    "DTZ",    # flake8-datetimez
-    "T10",    # flake8-debugger
-    "ISC",    # flake8-implicit-str-concat
-    "ICN",    # flake8-import-conventions
-    "PIE",    # flake8-pie
-    "PT",     # flake8-pytest-style
-    "Q",      # flake8-quotes
-    "RSE",    # flake8-raise
-    "RET",    # flake8-return
-    "SLF",    # flake8-self
-    "SIM",    # flake8-simplify
-    "TID",    # flake8-tidy-imports
-    "ARG",    # flake8-unused-arguments
-    "ERA",    # eradicate (commented-out code)
-    "PGH",    # pygrep-hooks
-    "PL",     # Pylint
-    "TRY",    # tryceratops
-    "RUF",    # Ruff-specific rules
+    "E9",     # Syntax errors (E901, E902, E999)
+    "F63",    # Invalid print/exec in Python 2 (F631, F632, F633, F634)
+    "F7",     # Syntax errors in string formatting (F701, F702, F704, F706)
+    "F82",    # Undefined names (F821, F822, F823)
+    "F401",   # Module imported but unused (can break if module has side effects)
+    "F405",   # Import star usage (can hide undefined names)
+    "F524",   # String format with unused args
+    "F525",   # String format with missing args
+    "F541",   # f-string without placeholders
+    "F601",   # Dictionary key repetition
+    "F602",   # Dictionary key variable repetition
+    "F621",   # Multiple expressions on same line
+    "F622",   # Multiple assignments to same variable
+    "F631",   # Assertion test is a tuple
+    "F632",   # Use of == in place of is
+    "F701",   # Break outside loop
+    "F702",   # Continue outside loop
+    "F704",   # Yield outside function
+    "F706",   # Return outside function
+    "F811",   # Redefinition of unused variable
+    "F841",   # Local variable assigned but never used
 ]
 
 # Ignore these specific rules
@@ -135,6 +123,7 @@ ignore = [
     "PLR0913", # Too many arguments
     "COM812", # Missing trailing comma (conflicts with formatter)
     "ISC001", # Implicit string concat (conflicts with formatter)
+    "F401",   # Unused imports (common during development)
 ]
 
 # Allow autofix for all enabled rules

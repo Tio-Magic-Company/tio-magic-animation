@@ -14,16 +14,16 @@ except ImportError as e:
 
 # Export only the classes that should be accessible to users
 __all__ = [
-    "Wan21TextToVideo14B",
-    "Wan21I2V14b720p",
+    "CogVideoX5BImageToVideo",
+    "CogVideoXTextToVideo5B",
+    "FramepackI2VHYImageToVideo",
+    "FramepackI2VHYInterpolate",
+    "LTXVideoImageToVideo",
     "Wan21FlfvInterpolate14b720p",
-    "Wan21VaceTextToVideo14B",
+    "Wan21I2V14b720p",
+    "Wan21TextToVideo14B",
     "Wan21VaceImageToVideo14B",
     "Wan21VaceInterpolate14B",
     "Wan21VacePoseGuidance14B",
-    "CogVideoXTextToVideo5B",
-    "CogVideoX5BImageToVideo",
-    "FramepackI2VHYInterpolate",
-    "FramepackI2VHYImageToVideo",
-    "LTXVideoImageToVideo",
+    "Wan21VaceTextToVideo14B",
 ]

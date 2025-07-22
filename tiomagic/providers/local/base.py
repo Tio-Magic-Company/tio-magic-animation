@@ -64,8 +64,7 @@ class LocalProviderBase:
         )
 
         try:
-            payload = self._prepare_payload(required_args, **kwargs)
-
+            self._prepare_payload(required_args, **kwargs)
 
             # This should be implemented by subclasses
             # For now, return a basic response
