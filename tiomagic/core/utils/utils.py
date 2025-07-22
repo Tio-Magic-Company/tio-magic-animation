@@ -62,7 +62,7 @@ def load_video_robust(video_source):
                 print(f"Loading video from URL: {video_source}")
                 return url_video_to_bytes(video_source)
             elif video_source.startswith('data:video'):
-                print(f"Loading video from base64 data URL")
+                print("Loading video from base64 data URL")
                 # Extract base64 part from data URL
                 if "," in video_source:
                     base64_str = video_source.split(",")[1]
@@ -72,7 +72,7 @@ def load_video_robust(video_source):
             # Check if it's a raw base64 string (without data URL prefix)
             elif len(video_source) > 100:  # Base64 strings are typically long
                 try:
-                    print(f"Loading video from base64 string")
+                    print("Loading video from base64 string")
                     return base64.b64decode(video_source)
                 except Exception:
                     # If base64 decode fails, treat as local path

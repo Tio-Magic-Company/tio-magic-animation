@@ -44,7 +44,7 @@ def check_status(app_name: str) -> Dict[str, Any]:
     }
 
     try:
-        app_info = modal.App.lookup(app_name)
+        modal.App.lookup(app_name)
         result['deployed'] = True
         result['message'] = f"App '{app_name} is deployed"
         return result
@@ -132,7 +132,7 @@ def load_image_robust(image_source):
 
         # Check if it's a base64 string
         elif isinstance(image_source, str) and image_source.startswith('data:image'):
-            print(f"Loading image from base64 data URL")
+            print("Loading image from base64 data URL")
             # Extract base64 part
             if "," in image_source:
                 base64_str = image_source.split(",")[1]

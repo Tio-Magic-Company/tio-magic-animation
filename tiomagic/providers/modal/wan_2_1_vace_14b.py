@@ -90,7 +90,6 @@ class T2V:
         flow_shift = 3.0
         self.pipe.scheduler = FlowMatchEulerDiscreteScheduler.from_config(self.pipe.scheduler.config, flow_shift=flow_shift)
         self.pipe.to("cuda")
-        device = "cuda:0" if torch.cuda.is_available() else "cpu"
 
         print("✅ Models loaded successfully.")
     @modal.method()
@@ -157,7 +156,6 @@ class I2V:
         flow_shift = 5.0
         self.pipe.scheduler = UniPCMultistepScheduler.from_config(self.pipe.scheduler.config, flow_shift=flow_shift)
         self.pipe.to("cuda")
-        device = "cuda:0" if torch.cuda.is_available() else "cpu"
 
         print("✅ Models loaded successfully.")
     @modal.method()
@@ -262,7 +260,6 @@ class Interpolate:
         flow_shift = 5.0
         self.pipe.scheduler = UniPCMultistepScheduler.from_config(self.pipe.scheduler.config, flow_shift=flow_shift)
         self.pipe.to("cuda")
-        device = "cuda:0" if torch.cuda.is_available() else "cpu"
 
         print("✅ Models loaded successfully.")
     @modal.method()
