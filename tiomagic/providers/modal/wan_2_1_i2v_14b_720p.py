@@ -6,7 +6,8 @@ from fastapi.responses import JSONResponse
 from .base import GPUType, GenericWebAPI, ModalProviderBase
 from typing import Any, Dict
 from ...core.registry import registry
-from ...core.utils import load_image_robust, is_local_path, local_image_to_base64, create_timestamp
+from ...core.utils import load_image_robust, is_local_path, local_image_to_base64, create_timestamp, extract_image_dimensions
+from ...core.feature_types import FeatureType
 
 APP_NAME = "test-wan-2.1-i2v-14b-720p"
 CACHE_NAME = f"{APP_NAME}-cache"
@@ -106,6 +107,8 @@ class I2V:
             # load_image_robust can handle both URLs and base64 strings
             image = load_image_robust(image)
             data['image'] = image
+            if 'height' not in data and 'width' not in data:
+                data = extract_image_dimensions(image, data)
         except Exception as e:
             return {"error": f"Error processing images: {str(e)}"}
         
@@ -113,7 +116,7 @@ class I2V:
         interpolate_instance = I2V()
         call = interpolate_instance.generate.spawn(data)
         
-        return JSONResponse({"call_id": call.object_id, "feature_type": "interpolate"})
+        return JSONResponse({"call_id": call.object_id, "feature_type": FeatureType.INTERPOLATE})
 
 class Wan21I2V14b720p(ModalProviderBase):
     def __init__(self, api_key=None):
@@ -128,7 +131,7 @@ class Wan21I2V14b720p(ModalProviderBase):
         """
         payload = super()._prepare_payload(required_args, **kwargs)
         # payload = {"prompt": required_args['prompt']}
-        payload["feature_type"] = "image_to_video"
+        payload["feature_type"] = FeatureType.IMAGE_TO_VIDEO
         
         if payload['image'] is None:
             raise ValueError("Argument 'image' is required for Image to Video generation")
@@ -141,7 +144,7 @@ class Wan21I2V14b720p(ModalProviderBase):
 # Create a subclass with the handlers
 class WebAPI(GenericWebAPI):
     feature_handlers = {
-        "image_to_video": I2V
+        FeatureType.IMAGE_TO_VIDEO: I2V
     }
 
 # Apply Modal decorator
@@ -156,7 +159,7 @@ WebAPI = app.cls(
 
 
 registry.register(
-    feature="image_to_video",
+    feature=FeatureType.IMAGE_TO_VIDEO,
     model="wan2.1-i2v-14b-720p",
     provider="modal",
     implementation=Wan21I2V14b720p

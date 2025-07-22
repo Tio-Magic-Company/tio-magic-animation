@@ -7,6 +7,7 @@ from .base import GPUType, GenericWebAPI, ModalProviderBase
 from typing import Any, Dict
 from ...core.registry import registry
 from ...core.utils import create_timestamp
+from ...core.feature_types import FeatureType
 
 VOLUME_NAME = "test-wan-2.1-t2v-14b-cache"
 CACHE_PATH = "/cache" 
@@ -172,13 +173,13 @@ class Wan21TextToVideo14B(ModalProviderBase):
         payload = super()._prepare_payload(required_args, **kwargs)
         
         # Add feature_type for routing
-        payload["feature_type"] = "text_to_video"
+        payload["feature_type"] = FeatureType.TEXT_TO_VIDEO
             
         return payload
 
 class WebAPI(GenericWebAPI):
     feature_handlers = {
-        "text_to_video": T2V
+        FeatureType.TEXT_TO_VIDEO: T2V
     }
 WebAPI = app.cls(
     image=image,
@@ -191,7 +192,7 @@ WebAPI = app.cls(
 
 # Register with the system registry
 registry.register(
-    feature="text_to_video",
+    feature=FeatureType.TEXT_TO_VIDEO,
     model="wan2.1-t2v-14b",
     provider="modal",
     implementation=Wan21TextToVideo14B

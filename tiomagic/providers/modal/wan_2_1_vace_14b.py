@@ -6,7 +6,8 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from .base import GPUType, GenericWebAPI, ModalProviderBase
 from typing import Any, Dict
 from ...core.registry import registry
-from ...core.utils import prepare_video_and_mask, load_image_robust, is_local_path, local_image_to_base64, create_timestamp, load_video_robust
+from ...core.utils import prepare_video_and_mask, load_image_robust, is_local_path, local_image_to_base64, create_timestamp, load_video_robust, extract_image_dimensions
+from ...core.feature_types import FeatureType
 
 # --- Configuration ---
 APP_NAME = "test-wan-2.1-vace-t2v-14b"
@@ -25,7 +26,7 @@ image = (
     modal.Image.debian_slim(python_version="3.11")
     .apt_install("git")
     .pip_install(
-        "torch==2.3.1",
+        "torch==2.4.0",
         'imageio',
         'onnxruntime',
         'imageio-ffmpeg',
@@ -42,7 +43,8 @@ image = (
         'omegaconf',
         "opencv-python-headless",
         "safetensors",
-        "fastapi"
+        "fastapi",
+        "python-dotenv"
     ).run_commands("pip install easy-dwpose --no-deps")
     .env({"HF_HUB_CACHE": CACHE_PATH, "TOKENIZERS_PARALLELISM": "false"})
 )
@@ -122,7 +124,7 @@ class T2V:
         t2v_instance = T2VAppClass()
         call = t2v_instance.generate.spawn(data)
         
-        return JSONResponse({"call_id": call.object_id, "feature_type": "text_to_video"})
+        return JSONResponse({"call_id": call.object_id, "feature_type": FeatureType.TEXT_TO_VIDEO})
 T2VAppClass = app_class_factory(T2V)
 
 class Wan21VaceTextToVideo14B(ModalProviderBase):
@@ -136,7 +138,7 @@ class Wan21VaceTextToVideo14B(ModalProviderBase):
         payload = super()._prepare_payload(required_args, **kwargs)
         
         # Add feature_type for routing
-        payload["feature_type"] = "text_to_video"
+        payload["feature_type"] = FeatureType.TEXT_TO_VIDEO
         
         # print("payload: ", payload)
         return payload
@@ -163,17 +165,19 @@ class I2V:
         import torch
         from diffusers.utils import export_to_video
         import io
-
+        print("***MODAL GENERATE METHOD***")
         print("Starting video generation process...")
 
         # Define video parameters
         height = data.get('height', 480)
         width = data.get('width', 832)
+        print('width and height in generate, ', width, height)
         num_frames = data.get('num_frames', 81)
 
         # Prepare the data for the pipeline
         video, mask = prepare_video_and_mask(data.get('image'), height, width, num_frames)
         data.pop('image')
+        print('data run in the pipeline: ', data)
 
         # Run the diffusion pipeline
         output_frames = self.pipe(
@@ -197,6 +201,8 @@ class I2V:
     @staticmethod
     def handle_web_inference(data: dict):
         """Handle image-to-video generation."""
+        print("***MODAL HANDLE WEB INFERENCE METHOD***")
+
         
         prompt = data.get("prompt")
         image = data.get("image")
@@ -213,6 +219,8 @@ class I2V:
         try:
             image = load_image_robust(image)
             data['image'] = image
+            if 'height' not in data and 'width' not in data:
+                data = extract_image_dimensions(image, data)
         except Exception as e:
             return {"error": f"Error processing images: {str(e)}"}
 
@@ -220,7 +228,7 @@ class I2V:
         i2v_instance = I2VAppClass()
         call = i2v_instance.generate.spawn(data)
         
-        return JSONResponse({"call_id": call.object_id, "feature_type": "image_to_video"})
+        return JSONResponse({"call_id": call.object_id, "feature_type": FeatureType.IMAGE_TO_VIDEO})
 I2VAppClass = app_class_factory(I2V)
 
 class Wan21VaceImageToVideo14B(ModalProviderBase):
@@ -231,6 +239,8 @@ class Wan21VaceImageToVideo14B(ModalProviderBase):
         self.modal_class_name = "I2V"
     def _prepare_payload(self, required_args: Dict[str, Any], **kwargs) -> Dict[str, Any]:
         """Prepare payload specific to Wan2.1 Vace Image-to-Video model."""
+        print("***CHILD PREPARE PAYLOAD***")
+
         payload = super()._prepare_payload(required_args, **kwargs)
         payload["feature_type"] = "image_to_video"
         
@@ -300,11 +310,13 @@ class Interpolate:
             return {"error": "Both 'first_frame' and 'last_frame' are required."}
         
         try:
-            # load_image_robust can handle both URLs and base64 strings
+            # load_image_robust can handle both URLs and base64 strings, return PIL.Image
             first_frame = load_image_robust(first_frame)
             last_frame = load_image_robust(last_frame)   
             data['first_frame'] = first_frame
-            data['last_frame'] = last_frame         
+            data['last_frame'] = last_frame
+            if 'height' not in data and 'width' not in data:
+                data = extract_image_dimensions(first_frame, data)
         except Exception as e:
             return {"error": f"Error processing images: {str(e)}"}
 
@@ -312,7 +324,7 @@ class Interpolate:
         interpolate_instance = InterpolateAppClass()
         call = interpolate_instance.generate.spawn(data)
         
-        return JSONResponse({"call_id": call.object_id, "feature_type": "interpolate"})
+        return JSONResponse({"call_id": call.object_id, "feature_type": FeatureType.INTERPOLATE})
 InterpolateAppClass = app_class_factory(Interpolate)
 
 class Wan21VaceInterpolate14B(ModalProviderBase):
@@ -328,7 +340,7 @@ class Wan21VaceInterpolate14B(ModalProviderBase):
         """
         payload = super()._prepare_payload(required_args, **kwargs)
         # payload = {"prompt": required_args['prompt']}
-        payload["feature_type"] = "interpolate"
+        payload["feature_type"] = FeatureType.INTERPOLATE
         
         if payload['first_frame'] is None or payload['last_frame'] is None:
             raise ValueError("Arguments 'first_frame' and 'last_frame' are required for Interpolation Video generation")
@@ -431,6 +443,8 @@ class PoseGuidance:
             # base64 or URL to PIL.Image.Image
             image = load_image_robust(image)
             data['image'] = image
+            if 'height' not in data and 'width' not in data:
+                data = extract_image_dimensions(image, data)
         except Exception as e:
             return {"error": f"Error processing images: {str(e)}"}
         
@@ -447,7 +461,7 @@ class PoseGuidance:
         pose_guidance_instance = PoseGuidanceAppClass()
         call = pose_guidance_instance.generate.spawn(data)
 
-        return JSONResponse({"call_id": call.object_id, "feature_type": "pose_guidance"})
+        return JSONResponse({"call_id": call.object_id, "feature_type": FeatureType.POSE_GUIDANCE})
 PoseGuidanceAppClass = app_class_factory(PoseGuidance)
 
 class Wan21VacePoseGuidance14B(ModalProviderBase):
@@ -463,7 +477,7 @@ class Wan21VacePoseGuidance14B(ModalProviderBase):
         """
         import base64
         payload = super()._prepare_payload(required_args, **kwargs)
-        payload["feature_type"] = "pose_guidance"
+        payload["feature_type"] = FeatureType.POSE_GUIDANCE
 
         if is_local_path(payload['image']):
             payload['image'] = local_image_to_base64(payload['image'])
@@ -482,10 +496,10 @@ class Wan21VacePoseGuidance14B(ModalProviderBase):
 # Create a subclass with the handlers
 class WebAPI(GenericWebAPI):
     feature_handlers = {
-        "text_to_video": T2V,
-        "image_to_video": I2V,
-        "interpolate": Interpolate,
-        "pose_guidance": PoseGuidance,
+        FeatureType.TEXT_TO_VIDEO: T2V,
+        FeatureType.IMAGE_TO_VIDEO: I2V,
+        FeatureType.INTERPOLATE: Interpolate,
+        FeatureType.POSE_GUIDANCE: PoseGuidance,
     }
 # Apply Modal decorator
 WebAPIClass = app_class_factory(WebAPI)
@@ -493,25 +507,25 @@ WebAPIClass = app_class_factory(WebAPI)
 
 # Register with the system registry
 registry.register(
-    feature="text_to_video",
+    feature=FeatureType.TEXT_TO_VIDEO,
     model="wan2.1-vace-14b",
     provider="modal",
     implementation=Wan21VaceTextToVideo14B
 )
 registry.register(
-    feature="image_to_video",
+    feature=FeatureType.IMAGE_TO_VIDEO,
     model="wan2.1-vace-14b",
     provider="modal",
     implementation=Wan21VaceImageToVideo14B
 )
 registry.register(
-    feature="interpolate",
+    feature=FeatureType.INTERPOLATE,
     model="wan2.1-vace-14b",
     provider="modal",
     implementation=Wan21VaceInterpolate14B
 )
 registry.register(
-    feature="pose_guidance",
+    feature=FeatureType.POSE_GUIDANCE,
     model="wan2.1-vace-14b",
     provider="modal",
     implementation=Wan21VacePoseGuidance14B,

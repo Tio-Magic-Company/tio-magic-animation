@@ -6,7 +6,8 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from .base import GPUType, GenericWebAPI, ModalProviderBase
 from typing import Any, Dict
 from ...core.registry import registry
-from ...core.utils import load_image_robust, is_local_path, local_image_to_base64, create_timestamp
+from ...core.utils import load_image_robust, is_local_path, local_image_to_base64, create_timestamp, extract_image_dimensions
+from ...core.feature_types import FeatureType
 
 APP_NAME = "test-cogvideox-5b-i2v"
 CACHE_PATH = "/cache"
@@ -102,13 +103,15 @@ class I2V:
         try:
             image = load_image_robust(image)
             data['image'] = image
+            if 'height' not in data and 'width' not in data:
+                data = extract_image_dimensions(image, data)
         except Exception as e:
             return {"error": f"Error processing images: {str(e)}"}
 
         i2v_instance = I2V()
         call = i2v_instance.generate.spawn(data)
 
-        return JSONResponse({"call_id": call.object_id, "feature_type": "image_to_video"})
+        return JSONResponse({"call_id": call.object_id, "feature_type": FeatureType.IMAGE_TO_VIDEO})
 
 class CogVideoX5BImageToVideo(ModalProviderBase):
     def __init__(self, api_key=None):
@@ -119,7 +122,7 @@ class CogVideoX5BImageToVideo(ModalProviderBase):
     def _prepare_payload(self, required_args: Dict[str, Any], **kwargs) -> Dict[str, Any]:
         """Prepare specific payload."""
         payload = super()._prepare_payload(required_args, **kwargs)
-        payload["feature_type"] = "image_to_video"
+        payload["feature_type"] = FeatureType.IMAGE_TO_VIDEO
         
         if is_local_path(payload['image']):
             payload['image'] = local_image_to_base64(payload['image'])
@@ -128,7 +131,7 @@ class CogVideoX5BImageToVideo(ModalProviderBase):
 # Create a subclass with the handlers
 class WebAPI(GenericWebAPI):
     feature_handlers = {
-        "image_to_video": I2V,
+        FeatureType.IMAGE_TO_VIDEO: I2V,
     }
 
 # Apply Modal decorator
@@ -142,7 +145,7 @@ WebAPI = app.cls(
 )(WebAPI)
 
 registry.register(
-    feature="image_to_video",
+    feature=FeatureType.IMAGE_TO_VIDEO,
     model="cogvideox-5b-image-to-video",
     provider="modal",
     implementation=CogVideoX5BImageToVideo

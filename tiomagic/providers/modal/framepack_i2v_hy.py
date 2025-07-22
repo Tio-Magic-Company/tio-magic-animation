@@ -6,7 +6,8 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from .base import GPUType, GenericWebAPI, ModalProviderBase
 from typing import Any, Dict
 from ...core.registry import registry
-from ...core.utils import load_image_robust, is_local_path, local_image_to_base64, create_timestamp
+from ...core.utils import load_image_robust, is_local_path, local_image_to_base64, create_timestamp, extract_image_dimensions
+from ...core.feature_types import FeatureType
 
 APP_NAME = "test-framepack-i2v-hy"
 CACHE_NAME = f"{APP_NAME}-cache"
@@ -111,6 +112,8 @@ class I2V:
         try:
             image = load_image_robust(image)
             data['image'] = image
+            if 'height' not in data and 'width' not in data:
+                data = extract_image_dimensions(image, data)
         except Exception as e:
             return {"error": f"Error processing images: {str(e)}"}
 
@@ -118,7 +121,7 @@ class I2V:
         i2v_instance = I2V()
         call = i2v_instance.generate.spawn(data)
         
-        return JSONResponse({"call_id": call.object_id, "feature_type": "image_to_video"})
+        return JSONResponse({"call_id": call.object_id, "feature_type": FeatureType.IMAGE_TO_VIDEO})
 class FramepackI2VHYImageToVideo(ModalProviderBase):
     def __init__(self, api_key=None):
         super().__init__(api_key)
@@ -128,7 +131,7 @@ class FramepackI2VHYImageToVideo(ModalProviderBase):
     def _prepare_payload(self, required_args: Dict[str, Any], **kwargs) -> Dict[str, Any]:
         """Prepare payload specific to Wan2.1 Vace Image-to-Video model."""
         payload = super()._prepare_payload(required_args, **kwargs)
-        payload["feature_type"] = "image_to_video"
+        payload["feature_type"] = FeatureType.IMAGE_TO_VIDEO
         
         if is_local_path(payload['image']):
             payload['image'] = local_image_to_base64(payload['image'])
@@ -209,14 +212,16 @@ class Interpolate:
             first_frame = load_image_robust(first_frame)
             last_frame = load_image_robust(last_frame)   
             data['first_frame'] = first_frame
-            data['last_frame'] = last_frame         
+            data['last_frame'] = last_frame    
+            if 'height' not in data and 'width' not in data:
+                data = extract_image_dimensions(first_frame, data)     
         except Exception as e:
             return {"error": f"Error processing images: {str(e)}"}
         
         interpolate_instance = Interpolate()
         call = interpolate_instance.generate.spawn(data)
         
-        return JSONResponse({"call_id": call.object_id, "feature_type": "interpolate"})
+        return JSONResponse({"call_id": call.object_id, "feature_type": FeatureType.INTERPOLATE})
 class FramepackI2VHYInterpolate(ModalProviderBase):
     def __init__(self, api_key=None):
         super().__init__(api_key)
@@ -230,7 +235,7 @@ class FramepackI2VHYInterpolate(ModalProviderBase):
         """
         payload = super()._prepare_payload(required_args, **kwargs)
         # payload = {"prompt": required_args['prompt']}
-        payload["feature_type"] = "interpolate"
+        payload["feature_type"] = FeatureType.INTERPOLATE
         
         if payload['first_frame'] is None or payload['last_frame'] is None:
             raise ValueError("Arguments 'first_frame' and 'last_frame' are required for Interpolation Video generation")
@@ -247,8 +252,8 @@ class FramepackI2VHYInterpolate(ModalProviderBase):
 # Create a subclass with the handlers
 class WebAPI(GenericWebAPI):
     feature_handlers = {
-        "interpolate": Interpolate,
-        "image_to_video": I2V,
+        FeatureType.INTERPOLATE: Interpolate,
+        FeatureType.IMAGE_TO_VIDEO: I2V,
     }
 
 # Apply Modal decorator
@@ -262,13 +267,13 @@ WebAPI = app.cls(
 )(WebAPI)
 
 registry.register(
-    feature="interpolate",
+    feature=FeatureType.INTERPOLATE,
     model="framepack-i2v-hy",
     provider="modal",
     implementation=FramepackI2VHYInterpolate
 )
 registry.register(
-    feature="image_to_video",
+    feature=FeatureType.IMAGE_TO_VIDEO,
     model="framepack-i2v-hy",
     provider="modal",
     implementation=FramepackI2VHYImageToVideo

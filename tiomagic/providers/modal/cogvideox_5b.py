@@ -7,6 +7,7 @@ from .base import GPUType, GenericWebAPI, ModalProviderBase
 from typing import Any, Dict
 from ...core.registry import registry
 from ...core.utils import create_timestamp
+from ...core.feature_types import FeatureType
 
 # --- Configuration ---
 APP_NAME = "test-cogvideox-5b"
@@ -118,7 +119,7 @@ class T2V:
         t2v_instance = T2V()
         call = t2v_instance.generate.spawn(data)
 
-        return JSONResponse({"call_id": call.object_id, "feature_type": "text_to_video"})
+        return JSONResponse({"call_id": call.object_id, "feature_type": FeatureType.TEXT_TO_VIDEO})
 
 class CogVideoXTextToVideo5B(ModalProviderBase):
     def __init__(self, api_key=None):
@@ -131,7 +132,7 @@ class CogVideoXTextToVideo5B(ModalProviderBase):
         payload = super()._prepare_payload(required_args, **kwargs)
         
         # Add feature_type for routing
-        payload["feature_type"] = "text_to_video"
+        payload["feature_type"] = FeatureType.TEXT_TO_VIDEO
         
         # print("payload: ", payload)
         return payload
@@ -139,7 +140,7 @@ class CogVideoXTextToVideo5B(ModalProviderBase):
 # Create a subclass with the handlers
 class WebAPIClass(GenericWebAPI):
     feature_handlers = {
-        "text_to_video": T2V,
+        FeatureType.TEXT_TO_VIDEO: T2V,
     }
 
 # Apply Modal decorator
@@ -153,7 +154,7 @@ WebAPI = app.cls(
 )(WebAPIClass)
 
 registry.register(
-    feature="text_to_video",
+    feature=FeatureType.TEXT_TO_VIDEO,
     model="cogvideox-5b",
     provider="modal",
     implementation=CogVideoXTextToVideo5B,

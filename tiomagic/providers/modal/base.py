@@ -73,6 +73,8 @@ class ModalProviderBase:
         Returns:
             Dict containing generation result with call_id and status
         """
+        print("***BASE CLASS GENERATE***")
+
         self._validate_config()
 
         from datetime import datetime
@@ -123,7 +125,7 @@ class ModalProviderBase:
                 return generation.to_dict()
             
             # Update generation with call_id
-            message = "generation queued. This may take a few minutes if it is the first time you are running this model"
+            message = "generation queued."
             generation.update(call_id=call_id, status=JobStatus.QUEUED, message=message)
             print(f"Got call_id: {call_id}")
             
@@ -143,6 +145,8 @@ class ModalProviderBase:
         Returns:
             Dict containing the request payload
         """
+        print("***BASE CLASS PREPARE PAYLOAD***")
+
         # Base payload - subclasses can override to add model-specific parameters
         if required_args is None or required_args['prompt'] is None:
             raise ValueError("required_args and prompt are required")
@@ -172,6 +176,8 @@ class ModalProviderBase:
         """
         from json import JSONDecodeError
         try:
+            print("***BASE CLASS MAKE WEB INFERENCE REQUEST***")
+
             print("enter try - this may take a few minutes if it is your first time deploying" )
             response = requests.post(
                 url, 

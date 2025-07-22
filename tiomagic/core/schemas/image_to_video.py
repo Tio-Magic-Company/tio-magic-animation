@@ -17,7 +17,7 @@ SCHEMAS = {
             "width": {"type": int, "default": 832, "description": "The width in pixels of the generated video."},
             "num_frames": {"type": int, "default": 81, "description": "The number of frames in the generated video."},
             "num_inference_steps": {"type": int, "default": 50, "description": "The number of denoising steps. More steps usually lead to higher quality at the expense of slower inference."},
-            "guidance_scale": {"type": float, "default": 5.0, "description": "Guidance scale for classifier-free diffusion. Higher values encourage generation to be closely linked to the text prompt."},
+            "guidance_scale": {"type": float, "default": 5.0, "description": "Guidance scale for classifier-free diffusion. Higher values encourage  to be closely linked to the text prompt."},
             "num_videos_per_prompt": {"type": int, "default": 1, "description": "The number of videos to generate per prompt."},
             "generator": {"type": "torch.Generator", "description": "A torch.Generator or List[torch.Generator] to make generation deterministic."},
             "latents": {"type": "torch.Tensor", "description": "Pre-generated noisy latents to be used as inputs for generation."},
@@ -147,6 +147,23 @@ SCHEMAS = {
             "callback_on_step_end": {"type": "Callable", "description": "A function called at the end of each denoising step."},
             "callback_on_step_end_tensor_inputs": {"type": list, "description": "The list of tensor inputs for the callback_on_step_end function."},
             "max_sequence_length": {"type": int, "default": 128, "description": "Maximum sequence length for the prompt."}
+        }
+    },
+    "veo-2.0-generate-001": {
+        "required": {
+            "prompt": {"type": str, "description": "Text prompt to guide generation"},
+            "image": {"type": str, "description": "Path or URL to input image"}
+        },
+        "optional": {
+            # "DURATION": {"type": int, "default": 8, "description": "The length of video files that you want to generate. Accepted integer values are 5-8."},
+            "negativePrompt": {"type": str, "default": "", "description": "Text string that describes anything you want to discourage the model from generating"},
+            "aspectRatio": {"type": str, "default": "16:9", "description": "Defines the aspect ratio of the generated videos. Accepts '16:9' (landscape) or '9:16' (portrait)."},
+            "personGeneration": {"type": str, "default": "allow_adult", "description": "Controls whether people or face generation is allowed. Accepts 'allow_adult' or 'disallow'."},
+            # "RESOLUTION": {"type": str, "default": "720p", "description": "The resolution of the generated video (Veo 3 models only). Accepts '720p' or '1080p'."},
+            "numberOfVideos": {"type": int, "default": 1, "description": "The number of output videos requested, from 1 to 2."},
+            "durationSeconds": {"type": int, "default": 8, "description": "Veo 2 only. Length of each output video in seconds, between 5 and 8"},
+
+            # "SEED_NUMBER": {"type": int, "description": "A number from 0 to 4,294,967,295 to make video generation deterministic."}
         }
     }
 

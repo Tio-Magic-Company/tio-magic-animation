@@ -179,7 +179,8 @@ class TioMagic:
     def _create_implementation(self, impl_class, provider):
         """create an implementation instance with appropriate config"""
         if provider == "local":
-            return impl_class(model_path=self._config.get_model_path())
+            # return impl_class(model_path=self._config.get_model_path())
+            return impl_class()
         elif provider == "modal":
             return impl_class(api_key=self._config.get_api_key("modal"))
         elif provider == "baseten":
