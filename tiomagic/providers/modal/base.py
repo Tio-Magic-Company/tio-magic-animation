@@ -259,6 +259,8 @@ class ModalProviderBase:
         current_dir = os.path.dirname(os.path.abspath(__file__))
         repo_root = os.path.dirname(os.path.dirname(os.path.dirname(current_dir)))
         output_videos_dir = os.path.join(repo_root, "output_videos")
+        # Ensure the output_videos directory exists
+        os.makedirs(output_videos_dir, exist_ok=True)
         video_path = os.path.join(output_videos_dir, video_filename)
 
         with open(video_path, 'wb') as f:

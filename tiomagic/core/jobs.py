@@ -42,6 +42,10 @@ class Job:
     repo_root = os.path.dirname(os.path.dirname(cur_dir))
     LOG_PATH = Path(os.path.join(repo_root, 'generation_log.json'))
 
+    # Ensure the log file exists and is initialized as '{"jobs": []}'
+    if not LOG_PATH.exists():
+        LOG_PATH.write_text('{"jobs": []}')
+
     @classmethod
     def setup_log(cls):
          """Ensure log file exists"""

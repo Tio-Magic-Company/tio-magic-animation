@@ -67,7 +67,7 @@ Tio Magic Animation Toolkit is designed to simplify the use of video AI models f
    ```
    > **Important:** Don't forget the DOT!
 
-9. Depending on what provider(s) you are using, copy/paste the appropriate access keys to the `.env` file in the repository:
+9. Create a `.env` file at the root of your local repository. Depending on what provider(s) you are using, copy/paste the appropriate access keys to the `.env` file in the repository:
    - **Veo 2:** `GOOGLE_API_KEY`
    - **Modal:** `MODAL_TOKEN_ID` and `MODAL_TOKEN_SECRET`
 
@@ -125,7 +125,7 @@ if __name__ == "__main__":
 
 ### Veo 2.0 Generate 001
 
-Ensure you have a Gemini/Google API key and you have sufficient credits for the number of videos you want to create. Paste your key into `.env`.
+Ensure you have a `GOOGLE_API_KEY` and you have sufficient credits for the number of videos you want to create. Paste your key into `.env`.
 
 ```python
 from tiomagic import tm
@@ -151,7 +151,49 @@ def veo_image_to_video():
 
 ## Modal Models
 
-*(Content for Modal models section to be added)*
+Ensure that you have a `MODAL_TOKEN_ID` and `MODAL_TOKEN_SECRET` in your `.env` file. You can create one on your Modal dashboard or via Modal CLI.
+
+Depending on the model and feature you use, ensure that your required and optional arguments match the name and type that the model is looking for. You can find these requirements under `/core/schemas`.
+
+```python
+from tiomagic import tm
+from dotenv import load_dotenv
+
+def interpolate_example():
+    tm.configure(provider="modal")
+    
+    required_args = {
+        'first_frame': 'URL or Local path to first frame image',
+        'last_frame': 'URL or Local path to last frame image',
+        'prompt': "Cartoon styled painter Bob ross painting a tree on his canvas, then turns towards the camera and smiles to the audience."
+    }
+
+    optional_args = {
+        # ...
+    }
+
+    tm.interpolate(model="wan2.1-vace-14b", required_args=required_args, **optional_args)
+
+def check_status(job_id: str):
+    # updates generation_log.json
+    tm.check_generation_status(job_id)
+
+if __name__ == "__main__":
+    load_dotenv()
+    interpolate_example()  # run interpolate function once, output in generation_log.json
+
+    # job_id = "..."
+    # check_status(job_id)  # run check status on job
+```
+
+In the directory of your file, run:
+```bash
+python3 'file_name.py'
+```
+
+Once you successfully run a feature call on Modal, the job will show up in `generation_log.json`. You can check the job's status by running `check_status`.
+
+Occasionally check on the status of the job. Once it is completed on Modal, running `check_status` will download the resulting video into the `output_videos` directory in your local repository. You can also find the output video on your Modal dashboard.
 
 ## How to Contribute
 
