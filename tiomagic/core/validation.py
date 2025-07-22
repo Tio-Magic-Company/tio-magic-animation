@@ -1,6 +1,5 @@
 from typing import Dict, Any, Tuple, Optional, List, Union
 import os
-import re
 from urllib.parse import urlparse
 
 from .schemas import FEATURE_SCHEMAS
@@ -16,8 +15,7 @@ def get_schema(feature: str, model: str) -> Dict:
     return feature_schemas[model]
 
 def validate_parameters(feature: str, model: str, required_args: Dict, optional_args: Dict) -> Tuple[bool, Dict, str]:
-    """
-    Validate parameters for a specific feature/model.
+    """Validate parameters for a specific feature/model.
     
     Returns:
         Tuple containing (success, validated_params, error_message)
@@ -25,7 +23,7 @@ def validate_parameters(feature: str, model: str, required_args: Dict, optional_
     try:
         # get schema
         schema = get_schema(feature, model)
-        
+
         # validate required parameters
         for param_name, param_info in schema["required"].items():
             if param_name not in required_args:
@@ -35,18 +33,18 @@ def validate_parameters(feature: str, model: str, required_args: Dict, optional_
             param_type = param_info["type"]
             if not is_valid_type(required_args[param_name], param_type):
                 return False, {}, f"Parameter '{param_name}' should be of type {get_type_name(param_type)}"
-            
+
             # image validation
             if param_name == 'image' or param_name == 'first_frame' or param_name == 'last_frame':
                 valid, msg = validate_image_parameter(required_args[param_name])
                 if not valid:
                     return False, {}, msg
-        
+
         # process all required params
         validated_params = {}
         for param_name in schema["required"]:
             validated_params[param_name] = required_args[param_name]
-        
+
         # add optional_args if provided by user
         for param_name, param_value in optional_args.items():
             if param_name in schema["optional"]:
@@ -63,7 +61,7 @@ def validate_parameters(feature: str, model: str, required_args: Dict, optional_
         if feature == "pose_guidance":
             if not (validated_params["guiding_video"] or validated_params["pose_video"]):
                 return False, {}, f"Parameter 'guiding_video' or 'pose_video' must be provided for f{feature}"
-        
+
         return True, validated_params, ""
     except Exception as e:
         return False, {}, f"Validation error: {str(e)}"
@@ -97,4 +95,3 @@ def validate_image_parameter(image_param: str) -> Tuple[bool, str]:
     else:
         return False, f"Image file not found: {image_param}"
 
-        

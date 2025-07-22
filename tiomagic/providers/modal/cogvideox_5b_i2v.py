@@ -94,12 +94,12 @@ class I2V:
     def handle_web_inference(data: dict):
         prompt = data.get("prompt")
         image = data.get("image")
-        
+
         if not prompt:
             return {"error": "A 'prompt' is required."}
         if not image:
             return {"error": "An 'image' is required."}
-        
+
         try:
             image = load_image_robust(image)
             data['image'] = image
@@ -123,11 +123,11 @@ class CogVideoX5BImageToVideo(ModalProviderBase):
         """Prepare specific payload."""
         payload = super()._prepare_payload(required_args, **kwargs)
         payload["feature_type"] = FeatureType.IMAGE_TO_VIDEO
-        
+
         if is_local_path(payload['image']):
             payload['image'] = local_image_to_base64(payload['image'])
         return payload
-    
+
 # Create a subclass with the handlers
 class WebAPI(GenericWebAPI):
     feature_handlers = {

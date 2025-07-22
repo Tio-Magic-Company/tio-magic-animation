@@ -1,5 +1,4 @@
-"""
-Registry system for model implementations
+"""Registry system for model implementations
 Maintains mapping of feature/model/provider combinations to their implementations
 """
 
@@ -24,7 +23,7 @@ class Registry:
         self._features.add(feature)
         self._models.add(model)
         self._providers.add(provider)
-        
+
         # Register the implementation
         self._implementations[key] = implementation
     def get_implementation(self, feature, model, provider):
@@ -51,10 +50,10 @@ class Registry:
                 for (f, m, p), impl in self._implementations.items():
                     if f == feature and p == provider:
                         return impl
-            
+
             # If still not found
             raise ValueError(f"No implementation found for {feature}/{model}/{provider}")
-            
+
         return self._implementations[key]
     def get_features(self):
         """Get all supported features
@@ -63,7 +62,7 @@ class Registry:
             list: Sorted list of supported features
         """
         return sorted(list(self._features))
-    
+
     def get_providers(self):
         """Get all supported providers
         
@@ -71,7 +70,7 @@ class Registry:
             list: Sorted list of supported providers
         """
         return sorted(list(self._providers))
-    
+
     def get_models(self, feature=None, provider=None):
         """Get all available models, optionally filtered by feature/provider
         
@@ -87,7 +86,7 @@ class Registry:
             if (feature is None or feat == feature) and (provider is None or prov == provider):
                 models.add(model)
         return sorted(list(models))
-    
+
     def get_supported_providers(self, feature, model):
         """Get providers that support a specific feature/model combination
         
@@ -103,7 +102,7 @@ class Registry:
             if feat == feature and mod == model:
                 providers.append(prov)
         return sorted(providers)
-    
+
     def get_supported_features(self, model, provider):
         """Get features supported by a specific model/provider combination
         

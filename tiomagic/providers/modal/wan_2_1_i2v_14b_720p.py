@@ -97,12 +97,12 @@ class I2V:
     def handle_web_inference(data: Dict[str, Any]):
         prompt = data.get("prompt")
         image = data.get("image")
-        
+
         if not prompt:
             return {"error": "A 'prompt' is required."}
         if not image:
             return {"error": "An 'image' are required."}
-        
+
         try:
             # load_image_robust can handle both URLs and base64 strings
             image = load_image_robust(image)
@@ -111,11 +111,11 @@ class I2V:
                 data = extract_image_dimensions(image, data)
         except Exception as e:
             return {"error": f"Error processing images: {str(e)}"}
-        
+
         # Create Interpolate instance and call generate
         interpolate_instance = I2V()
         call = interpolate_instance.generate.spawn(data)
-        
+
         return JSONResponse({"call_id": call.object_id, "feature_type": FeatureType.INTERPOLATE})
 
 class Wan21I2V14b720p(ModalProviderBase):
@@ -125,14 +125,13 @@ class Wan21I2V14b720p(ModalProviderBase):
         self.modal_app = app
         self.modal_class_name = "I2V"
     def _prepare_payload(self, required_args: Dict[str, Any], **kwargs) -> Dict[str, Any]:
-        """
-        Prepare payload specific to Wan2.1 Vace Interpolate model.
+        """Prepare payload specific to Wan2.1 Vace Interpolate model.
         Break out required args into payload
         """
         payload = super()._prepare_payload(required_args, **kwargs)
         # payload = {"prompt": required_args['prompt']}
         payload["feature_type"] = FeatureType.IMAGE_TO_VIDEO
-        
+
         if payload['image'] is None:
             raise ValueError("Argument 'image' is required for Image to Video generation")
 
@@ -164,4 +163,3 @@ registry.register(
     provider="modal",
     implementation=Wan21I2V14b720p
 )
-        

@@ -1,5 +1,4 @@
 from tiomagic import tm
-import os
 from dotenv import load_dotenv
 
 def text_to_video_example():
@@ -22,7 +21,7 @@ def image_to_video_example():
     # prompt = "CG animation style, a small blue bird takes off from the ground, flapping its wings. The bird's feathers are delicate, with a unique pattern on its chest. The background shows a blue sky with white clouds under bright sunshine. The camera follows the bird upward, capturing its flight and the vastness of the sky from a close-up, low-angle perspective."
     # image = "https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/flf2v_input_first_frame.png"
     image = "/Users/karenlin/Documents/tm-animation/tio-magic-animation/images/test_blob.png"
-    prompt = "2D animation of a golden-colored blob wearing a crown moving to the right."
+    prompt = "2D animation of a golden-colored blob wearing a crown moving to the right. The blob is looking around in amazement and moving its arms."
 
     # prompt = "A penguin dancing in the snow"
     # image = "https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/penguin.png"
@@ -48,7 +47,7 @@ def interpolate_example():
     # first_frame = "https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/flf2v_input_first_frame.png"
     # last_frame = "https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/flf2v_input_last_frame.png"
     # prompt = "CG animation style, a small blue bird takes off from the ground, flapping its wings. The bird's feathers are delicate, with a unique pattern on its chest. The background shows a blue sky with white clouds under bright sunshine. The camera follows the bird upward, capturing its flight and the vastness of the sky from a close-up, low-angle perspective."
-    
+
     first_frame = '/Users/karenlin/Documents/tm-animation/tio-magic-animation/images/start.png'
     last_frame = '/Users/karenlin/Documents/tm-animation/tio-magic-animation/images/end.png'
     prompt = "Cartoon styled painter Bob ross paints a tree on his canvas, turns towards the camera and smiles to the audience"
@@ -69,7 +68,7 @@ def pose_guidance_example():
     tm.configure(provider="modal")
     # start image
     image = "/Users/karenlin/Documents/tm-animation/tio-magic-animation/images/aditya-base-dance.png"
-    
+
     # guiding video OR pose video
     guiding_video = "/Users/karenlin/Documents/tm-animation/tio-magic-animation/videos/driving-dance.mp4"
 
@@ -92,14 +91,14 @@ def pose_guidance_example():
 def check_status(job_id: str):
     # tm.configure(provider="modal")
     tm.check_generation_status(job_id)
-    
+
 
 if __name__ == "__main__":
     load_dotenv()
     # check for keys in appropriate provider files
-    
-    status = "4f8deed5-5bff-4966-b15d-5e4be34ef2ca"
-    
+
+    status = "5d55c482-e6be-4155-8927-a8223b64a752"
+
     # text_to_video_example()
     # image_to_video_example()
     # interpolate_example()

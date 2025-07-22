@@ -86,7 +86,7 @@ class I2V:
     def handle_web_inference(data: dict[str, Any]):
         prompt = data.get("prompt")
         image = data.get("image")
-        
+
         if not prompt:
             return {"error": "A 'prompt' is required."}
         if not image:
@@ -113,7 +113,7 @@ class LTXVideoImageToVideo(ModalProviderBase):
         """Prepare payload specific to Image-to-Video model."""
         payload = super()._prepare_payload(required_args, **kwargs)
         payload["feature_type"] = FeatureType.IMAGE_TO_VIDEO
-        
+
         if is_local_path(payload['image']):
             payload['image'] = local_image_to_base64(payload['image'])
         return payload
@@ -141,4 +141,4 @@ registry.register(
 )
 
 
-            
+

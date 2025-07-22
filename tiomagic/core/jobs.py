@@ -1,5 +1,4 @@
-"""
-Job tracking and management for TioMagic
+"""Job tracking and management for TioMagic
 Handles async job execution, progress tracking, and result retrieval
 """
 from dataclasses import asdict, dataclass
@@ -37,7 +36,7 @@ class Job:
             self.creation_time = datetime.now().strftime("%Y%m%d_%H%M%S")
         if self.last_updated is None:
             self.last_updated = self.creation_time
-            
+
     # Path to the log file for persistent storage
     cur_dir = os.path.dirname(os.path.abspath(__file__))
     repo_root = os.path.dirname(os.path.dirname(cur_dir))
@@ -50,7 +49,7 @@ class Job:
               print("log file does not exist, creating log file")
               with open(cls.LOG_PATH, "w") as f:
                    f.write(json.dumps({"jobs": []}))
-    
+
     @classmethod
     def load_all_jobs(cls) -> Dict[str, 'Job']:
         """Load all jobs from the log file."""
@@ -66,37 +65,37 @@ class Job:
         except Exception as e:
             print(f"Error loading jobs: {e}")
             return {}
-    
+
     @classmethod
     def get_job(cls, job_id: str) -> Optional['Job']:
         """Get a job by ID."""
         jobs = cls.load_all_jobs()
         print("job that we are returning, ", jobs.get(job_id))
         return jobs.get(job_id)
-    
+
     @classmethod
     def save_jobs(cls, jobs: Dict[str, 'Job']):
         """Save jobs to the log file."""
         cls.setup_log()
         with open(cls.LOG_PATH, "r") as f:
             existing_data = json.load(f)
-        
+
         # Convert existing jobs to a dictionary for easy lookup
         existing_jobs_dict = {}
         for job_data in existing_data.get("jobs", []):
             existing_jobs_dict[job_data["job_id"]] = job_data
-        
+
         # Update or add new jobs
         for job in jobs.values():
             job_dict = job.to_dict()
             existing_jobs_dict[job.job_id] = job_dict
-        
+
         # Convert back to list
         all_jobs = list(existing_jobs_dict.values())
 
         with open(cls.LOG_PATH, "w") as f:
             json.dump({"jobs": all_jobs}, f, indent=2)       
-        
+
 
     def to_dict(self) -> Dict:
         """Convert job to dictionary for storage."""
@@ -118,11 +117,11 @@ class Job:
             func (callable): Function to execute
         """
         self.start_time = time.time()
-        
+
         try:
             # Execute the function
             result = func()
-            
+
             self.generation = result
             self.save()
         except Exception as e:
@@ -150,16 +149,15 @@ class Job:
         self.save()
 
     def save(self):
-        """
-        Save job to log file
+        """Save job to log file
         """
         jobs = self.load_all_jobs()
         jobs[self.job_id] = self
         print(f"Job {self.job_id} saved to log file")
         self.save_jobs(jobs)
 
-    
-    
-    
- 
-        
+
+
+
+
+

@@ -59,10 +59,9 @@ class Veo20Generate001(LocalProviderBase):
         self.feature = FeatureType.IMAGE_TO_VIDEO
         self.operations = None
 
-        
+
     def _prepare_payload(self, required_args: Dict[str, Any], **kwargs) -> Dict[str, Any]:
-        """
-        Prepare payload specific to Veo 2.0 Generate 001 model.
+        """Prepare payload specific to Veo 2.0 Generate 001 model.
         Break out required args into payload
         """
         payload = super()._prepare_payload(required_args, **kwargs)
@@ -79,18 +78,18 @@ class Veo20Generate001(LocalProviderBase):
             file = types.Image.from_file(location=payload['image'])
             payload['image'] = file
 
-            
+
         #     # Wait a moment for processing
         #     import time
         #     time.sleep(2)
-            
+
         #     # Retrieve the file to ensure it's fully processed
         #     retrieved_file = self.client.files.get(name=uploaded_file.name)
-            
+
         #     # Check if file is active
         #     print(f'File state: {retrieved_file.state}')
         #     print(f'File details: name={retrieved_file.name}, mime_type={retrieved_file.mime_type}, size={retrieved_file.size_bytes}')
-            
+
         #     # Wait for file to be active if needed
         #     max_attempts = 10
         #     attempt = 0
@@ -99,17 +98,17 @@ class Veo20Generate001(LocalProviderBase):
         #         time.sleep(2)
         #         retrieved_file = self.client.files.get(name=uploaded_file.name)
         #         attempt += 1
-            
+
         #     if retrieved_file.state != "ACTIVE":
         #         raise ValueError(f"File upload failed or timed out. State: {retrieved_file.state}")
-            
+
         #     payload['image'] = retrieved_file
         #     print(f'File ready for use: {retrieved_file.name}')
-            
+
         # elif isinstance(payload['image'], str) and payload['image'].startswith('data:'):
         #     # Similar handling for base64...
         #     pass
-                
+
         return payload
             # image = PIL.Image.open(payload['image'])
             # payload['image'] = image
@@ -120,10 +119,9 @@ class Veo20Generate001(LocalProviderBase):
             # payload['image'] = base64_image.split(",", 1)[1]
             # payload["image"] = base64_to_bytes(base64_image)
         # return payload
-    
+
     def generate(self, required_args: Dict[str, Any], **kwargs) -> Dict[str, Any]:
-        """
-        Generate video using Google Veo API
+        """Generate video using Google Veo API
         """
         self._validate_config()
 
@@ -141,7 +139,7 @@ class Veo20Generate001(LocalProviderBase):
         try:
             payload = self._prepare_payload(required_args, **kwargs)
             print('-->payload done')
-            
+
             # Call Google Veo API
             config = types.GenerateVideosConfig(**kwargs)
             print('-->config done: ')
@@ -158,7 +156,7 @@ class Veo20Generate001(LocalProviderBase):
             print("--> operation creation done", operation)
 
             print(f"Generation started with operation: {operation.name}")
-            
+
             # https://ai.google.dev/gemini-api/docs/video#generate-from-images
             # https://github.com/googleapis/python-genai/blob/main/google/genai/operations.py#L348
             # ASYNC FUTURE IMPLEMENTATION
@@ -168,20 +166,20 @@ class Veo20Generate001(LocalProviderBase):
             #     'generation': generation,
             #     'started_at': datetime.now()
             # }
-            
+
             # print(f"Generation started with operation ID: {operation.name}")
             # generation.update(
             #     call_id = operation,
             #     status=JobStatus.running
             # )
             # generation.to_dict()
-            
+
             # # Return immediately with operation ID
             # return {
             #     'call_id': operation.name,
             #     'feature_type': 'image_to_video',
             # }
-            
+
             # Wait for completion
             while not operation.done:
                 time.sleep(20)
@@ -190,27 +188,27 @@ class Veo20Generate001(LocalProviderBase):
             # Download the video
             for n, generated_video in enumerate(operation.response.generated_videos):
                 video_bytes = self.client.files.download(file=generated_video.video)
-                
+
                 # Save video to file
                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
                 video_filename = f"veo_output_{timestamp}.mp4"
-                
+
                 # Get the directory of this file and save to the same directory
                 current_dir = os.path.dirname(os.path.abspath(__file__))
                 repo_root = os.path.dirname(os.path.dirname(os.path.dirname(current_dir)))
                 output_videos_dir = os.path.join(repo_root, "output_videos")
                 video_path = os.path.join(output_videos_dir, video_filename)
-                
+
                 with open(video_path, 'wb') as f:
                     f.write(video_bytes)
-                
+
                 generation.update(
                     call_id=operation.name,
                     status="completed",
                     message=f"Video generated and saved to {video_path}",
                     result_video=video_path
                 )
-                
+
                 return generation.to_dict()
 
         except Exception as e:
@@ -219,10 +217,10 @@ class Veo20Generate001(LocalProviderBase):
             raise
     # def check_generation_status(self, generation: Generation) -> Generation:
     #     """Check the status of a previous generate call.
-        
+
     #     Args:
     #         generation: The generation object containing call_id
-            
+
     #     Returns:
     #         Updated generation object with status and results
     #     """
@@ -233,32 +231,32 @@ class Veo20Generate001(LocalProviderBase):
     #         operation = self.client.operations.get(test_operation)
     #     except Exception as e:
     #         print('operation not found: ', str(e))
-        
+
     #     if operation.done:
     #         print('opereation done')
     #         try:
     #             from datetime import datetime
     #             results = []
-                
+
     #             # Download generated videos
     #             for n, generated_video in enumerate(operation.response.generated_videos):
     #                 # Download video
     #                 self.client.files.download(file=generated_video.video)
-                    
+
     #                 # Save video to file
     #                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     #                 video_filename = f"veo_output_{timestamp}_{n}.mp4"
-                    
+
     #                 # Setup output path
     #                 current_dir = os.path.dirname(os.path.abspath(__file__))
     #                 repo_root = os.path.dirname(os.path.dirname(os.path.dirname(current_dir)))
     #                 output_videos_dir = os.path.join(repo_root, "output_videos")
     #                 os.makedirs(output_videos_dir, exist_ok=True)
     #                 video_path = os.path.join(output_videos_dir, video_filename)
-                    
+
     #                 # Save video
     #                 generated_video.video.save(video_path)
-                    
+
     #                 results.append({
     #                     'filename': video_filename,
     #                     'path': video_path

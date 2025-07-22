@@ -1,8 +1,5 @@
+"""Base class for Modal model implementations in TioMagic.
 """
-Base class for Modal model implementations in TioMagic.
-"""
-
-from abc import abstractmethod
 from fastapi import Body
 from fastapi.responses import JSONResponse, StreamingResponse
 import modal
@@ -10,9 +7,6 @@ import os
 from typing import Any, Dict, Optional, Union
 from enum import Enum
 from datetime import datetime
-from pathlib import Path
-
-# from ...core.interfaces import TextToVideoInterface
 
 from ...core.utils import check_modal_app_deployment, Generation
 from ...core.jobs import JobStatus
@@ -40,20 +34,18 @@ TIMEOUT: int = 1800                 # Container timeout in seconds
 SCALEDOWN_WINDOW: int = 900         # Container scaledown window in seconds
 
 class ModalProviderBase:
-    """
-    Base class to interface with Modal app
+    """Base class to interface with Modal app
     """
     def __init__(self, api_key: Optional[str] = None):
         self.api_key = api_key
         self.module_path = os.path.abspath(__file__)
-        
+
         # These should be set by subclasses
         self.app_name = None
         self.modal_app = None
         self.modal_class_name = None
     def _validate_config(self):
-        """
-        Validate that required configuration is set
+        """Validate that required configuration is set
         """
         if not self.app_name:
             raise ValueError("Subclass must set app_name")
@@ -61,10 +53,9 @@ class ModalProviderBase:
             raise ValueError("Subclass must set modal_app")
         if not self.modal_class_name:
             raise ValueError("Subclass must set modal_class_name")
-    
+
     def generate(self, required_args: Dict[str, Any] = None, **kwargs) -> Dict[str, Any]:
-        """
-        Generate content using Modal web inference.
+        """Generate content using Modal web inference.
         This is the main entry point for generation that creates a Modal instance.
         Args:
             required_args: The generation prompt
@@ -79,7 +70,7 @@ class ModalProviderBase:
 
         from datetime import datetime
         print(f"Running {self.app_name} generate with prompt: {required_args['prompt']}")
-        
+
         generation = Generation(
             timestamp=datetime.now().strftime("%Y%m%d_%H%M%S"),
             required_args=required_args,
@@ -90,21 +81,21 @@ class ModalProviderBase:
             # Check deployment status
             deployment_status = check_modal_app_deployment(self.modal_app, self.app_name)
             print("return status: ", deployment_status)
-            
+
             if not deployment_status['success']:
                 generation.update(message=f"App '{self.app_name}' is not deployed: {deployment_status['message']}")
                 return generation.to_dict()
-                
+
             if not deployment_status['endpoints']:
                 generation.update(message=f"No endpoints found for app '{self.app_name}': {deployment_status['message']}")
                 return generation.to_dict()
-            
+
             # Get Modal class and web URLs
             print("app name: ", self.app_name)
             # print("modal class name: ", self.modal_class_name)
             # modal_class = modal.Cls.from_name(self.app_name, self.modal_class_name)
             # print("modal instance, ", modal_class)
-            
+
             # web_inference_url = modal_class().web_inference.get_web_url()
             # print("web_url: ", web_inference_url)
 
@@ -123,12 +114,12 @@ class ModalProviderBase:
             call_id = self._make_web_inference_request(web_inference_url, payload, generation)
             if not call_id:
                 return generation.to_dict()
-            
+
             # Update generation with call_id
             message = "generation queued."
             generation.update(call_id=call_id, status=JobStatus.QUEUED, message=message)
             print(f"Got call_id: {call_id}")
-            
+
             return generation.to_dict()
         except Exception as e:
             print(f"Error in generate: {str(e)}")
@@ -150,9 +141,9 @@ class ModalProviderBase:
         # Base payload - subclasses can override to add model-specific parameters
         if required_args is None or required_args['prompt'] is None:
             raise ValueError("required_args and prompt are required")
-                    
+
         payload = {"prompt": required_args['prompt']}            
-        
+
         for key, value in required_args.items():
             if value is not None:
                 payload[key] = value
@@ -160,9 +151,9 @@ class ModalProviderBase:
         for key, value in kwargs.items():
             if value is not None:
                 payload[key] = value
-                
+
         return payload
-    
+
     def _make_web_inference_request(self, url: str, payload: Dict[str, Any], generation: Generation) -> Optional[str]:
         """Make the web inference request and return call_id.
         
@@ -189,25 +180,25 @@ class ModalProviderBase:
             if response.status_code != 200:
                 generation.update(message=f"Error calling web_inference: {response.status_code}, {response.text}")
                 return None
-            
+
             try:
                 response_data = response.json()
                 print(f"Web inference response: {response_data}")
             except JSONDecodeError:
                 generation.update(message=f"Error parsing response as JSON: {response.text}")
                 return None
-            
+
             if "call_id" not in response_data:
                 generation.update(message="No call_id in response")
                 return None
-                
+
             return response_data["call_id"]
 
         except requests.RequestException as e:
             print("request error")
             generation.update(message=f"Request error: {str(e)}")
             return None
-    
+
     def check_generation_status(self, generation: Generation) -> Generation:
         """Check the status of a previous generate call.
         
@@ -228,7 +219,7 @@ class ModalProviderBase:
 
             # Save video to file
             video_path = self._save_video_file(video_bytes, generation["call_id"])
-            
+
             print(f"Video saved to: {video_path}")
             generation.update(
                 status=JobStatus.COMPLETED, 
@@ -236,7 +227,7 @@ class ModalProviderBase:
                 message=f"video completed and saved to {video_path}",
                 result_video=video_path
             )
-            
+
         except TimeoutError:
             print("NOT READY YET - MODAL CHECK GENERATION STATUS")
             generation.update(
@@ -244,13 +235,13 @@ class ModalProviderBase:
                 message="generation is not complete yet",
                 timestamp=datetime.now().strftime("%Y%m%d_%H%M%S")
             )
-            
+
         except Exception as e:
             print("EXCEPTION IN MODAL CHECK GEN STATUS", e)
             self._handle_generation_error(e, generation)
-        
+
         return generation
-    
+
     def _save_video_file(self, video_bytes: bytes, call_id: str) -> str:
         """Save video bytes to a file.
         
@@ -263,18 +254,18 @@ class ModalProviderBase:
         """
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         video_filename = f"{call_id}_{timestamp}.mp4"
-        
+
         # Get the directory of this file and save to the same directory
         current_dir = os.path.dirname(os.path.abspath(__file__))
         repo_root = os.path.dirname(os.path.dirname(os.path.dirname(current_dir)))
         output_videos_dir = os.path.join(repo_root, "output_videos")
         video_path = os.path.join(output_videos_dir, video_filename)
-        
+
         with open(video_path, 'wb') as f:
             f.write(video_bytes)
-            
+
         return video_path
-    
+
     def _handle_generation_error(self, error: Exception, generation: Generation):
         """Handle generation errors.
         
@@ -291,39 +282,38 @@ class ModalProviderBase:
                 generation.update(status=JobStatus.CANCELED, message=inner_e)
         else:
             generation.update(message=str(error))
-     
+
 
 class GenericWebAPI:
     """Generic WebAPI class that can be reused across different models."""
-    
+
     # Class variable to be set by subclasses
     feature_handlers: Dict[str, Any] = {}
-    
+
     @modal.fastapi_endpoint(method="POST")
     def web_inference(self, data: dict = Body(...)):
         print("DATA OF WEB INFERENCE, ", data)
         feature_type = data.pop("feature_type", None)
-        
+
         if not feature_type:
             return {"error": f"A 'feature_type' is required. Must be one of: {list(self.feature_handlers.keys())}"}
-        
+
         if feature_type not in self.feature_handlers:
             return {"error": f"Unknown feature_type: {feature_type}. Must be one of: {list(self.feature_handlers.keys())}"}
-        
+
         # Route to appropriate class
         handler_class = self.feature_handlers[feature_type]
         return handler_class.handle_web_inference(data)
 
     @modal.fastapi_endpoint(method="GET")
     def get_result(self, call_id: str, feature_type: str = None):
-        """
-        Unified FastAPI endpoint to poll for results from any class.
+        """Unified FastAPI endpoint to poll for results from any class.
         """
         import io
         from modal import FunctionCall
-        
+
         print(f"Polling for call_id: {call_id}, feature_type: {feature_type}")
-        
+
         try:
             call = FunctionCall.from_id(call_id)
             video_bytes = call.get(timeout=0)  # Use a short timeout to check for completion
@@ -332,13 +322,12 @@ class GenericWebAPI:
         except Exception as e:
             print(f"Error fetching result for {call_id}: {e}")
             return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
-        
+
         # Determine filename based on feature type
         if feature_type in self.feature_handlers:
             filename = f"{feature_type}-output_{call_id}.mp4"
         else:
             filename = f"output_{call_id}.mp4"
-        
+
         headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
         return StreamingResponse(io.BytesIO(video_bytes), media_type="video/mp4", headers=headers)
-    

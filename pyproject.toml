@@ -1,0 +1,183 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "tiomagic"
+version = "0.1.0"
+description = "A Python package for generating animations using AI-powered video models"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+authors = [
+    {name = "Tio Magic Company", email = ""},
+]
+keywords = ["video-generation", "ai", "modal", "diffusers", "animation"]
+classifiers = [
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+]
+dependencies = [
+    # Local and base dependencies
+    "fastapi[standard]",
+    "google-genai",
+    "pillow",
+    "numpy",
+    "python-dotenv",
+    "requests",
+    # Dependencies only needed for Modal deployments
+    "modal",
+    "torch>=2.5.0",
+]
+
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov",
+    "ruff",  # Linter and formatter
+    "mypy",
+    "pre-commit",
+]
+
+[project.urls]
+# Homepage = "https://github.com/yourusername/tio-magic-animation"
+# Documentation = "https://github.com/yourusername/tio-magic-animation#readme"
+# Repository = "https://github.com/yourusername/tio-magic-animation"
+# Issues = "https://github.com/yourusername/tio-magic-animation/issues"
+
+# Hatchling configuration
+[tool.hatch.build.targets.wheel]
+packages = ["tiomagic"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/tiomagic",
+    # "/tests",
+    "/*.md",
+    "/*.toml",
+    "/LICENSE",
+]
+
+# Ruff configuration - All-in-one Python linter and formatter
+[tool.ruff]
+# Set the maximum line length to 100
+line-length = 100
+
+# Set the minimum Python version to 3.8
+target-version = "py38"
+
+# Include these file patterns
+include = ["*.py", "*.pyi", "**/pyproject.toml", "*.ipynb"]
+
+# Exclude these directories
+exclude = [
+    ".git",
+    ".ruff_cache",
+    ".venv",
+    "venv",
+    "__pycache__",
+    "build",
+    "dist",
+    "*.egg-info",
+]
+
+# Enable these rule sets
+[tool.ruff.lint]
+select = [
+    "E",      # pycodestyle errors
+    "W",      # pycodestyle warnings  
+    "F",      # pyflakes
+    "I",      # isort (import sorting)
+    "UP",     # pyupgrade (modernize Python code)
+    "B",      # flake8-bugbear (bugs and design problems)
+    "C90",    # mccabe complexity
+    "N",      # pep8-naming
+    "D",      # pydocstyle (docstring style)
+    "S",      # flake8-bandit (security)
+    "BLE",    # flake8-blind-except
+    "FBT",    # flake8-boolean-trap
+    "A",      # flake8-builtins
+    "COM",    # flake8-commas
+    "C4",     # flake8-comprehensions
+    "DTZ",    # flake8-datetimez
+    "T10",    # flake8-debugger
+    "ISC",    # flake8-implicit-str-concat
+    "ICN",    # flake8-import-conventions
+    "PIE",    # flake8-pie
+    "PT",     # flake8-pytest-style
+    "Q",      # flake8-quotes
+    "RSE",    # flake8-raise
+    "RET",    # flake8-return
+    "SLF",    # flake8-self
+    "SIM",    # flake8-simplify
+    "TID",    # flake8-tidy-imports
+    "ARG",    # flake8-unused-arguments
+    "ERA",    # eradicate (commented-out code)
+    "PGH",    # pygrep-hooks
+    "PL",     # Pylint
+    "TRY",    # tryceratops
+    "RUF",    # Ruff-specific rules
+]
+
+# Ignore these specific rules
+ignore = [
+    "E501",   # Line too long (let formatter handle)
+    "D100",   # Missing docstring in public module
+    "D104",   # Missing docstring in public package
+    "D107",   # Missing docstring in __init__
+    "S101",   # Use of assert (needed for pytest)
+    "PLR0913", # Too many arguments
+    "COM812", # Missing trailing comma (conflicts with formatter)
+    "ISC001", # Implicit string concat (conflicts with formatter)
+]
+
+# Allow autofix for all enabled rules
+# fixable = ["ALL"]
+
+unfixable = [
+  # disable auto fix for print statements
+  "T201",
+  "T203",
+]
+
+
+[tool.ruff.lint.per-file-ignores]
+# Ignore certain rules in specific files
+"__init__.py" = ["F401", "F403"]  # Allow unused imports in __init__.py
+"tests/*" = ["S101", "PLR2004", "D"]  # Allow assert and magic values in tests
+"examples/*" = ["D", "T201"]  # Allow missing docstrings and print in examples
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"  # Use Google docstring style
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10  # Maximum cyclomatic complexity
+
+[tool.ruff.lint.isort]
+length-sort = true
+length-sort-straight = true
+combine-as-imports = true
+extra-standard-library = ["typing_extensions"]
+known-first-party = ["tiomagic"]
+
+[tool.ruff.format]
+# Use double quotes for strings
+# quote-style = "double"
+
+# Indent with 4 spaces
+indent-style = "space"
+
+# Use Unix line endings
+line-ending = "auto"
+
+# Format docstrings
+docstring-code-format = true
+
+# Format code in docstrings
+docstring-code-line-length = "dynamic"

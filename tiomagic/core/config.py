@@ -1,5 +1,4 @@
-"""
-Configuration management for TioMagic
+"""Configuration management for TioMagic
 Handles provider settings, API keys, and other global confiurations
 """
 
@@ -16,9 +15,9 @@ class Configuration:
         if provider not in supported_providers:
             raise ValueError(f"Unsupported provider: {provider}. "
                             f"Must be one of: {', '.join(supported_providers)}")
-        
+
         self._provider = provider
-    
+
     def get_api_key(self, provider=None):
         if provider is None:
             provider = self._provider # use active provider
@@ -26,7 +25,7 @@ class Configuration:
     def set_api_key(self, provider, key):
         if key is not None:
             self._api_keys[provider] = key
-    
+
     def get_model_path(self):
         return self._model_path
     def set_model_path(self, path):
@@ -39,4 +38,3 @@ class Configuration:
     def get_all_options(self):
         return self._options.copy()
 
-    

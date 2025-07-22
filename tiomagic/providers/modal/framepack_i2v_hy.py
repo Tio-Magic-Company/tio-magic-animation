@@ -81,14 +81,14 @@ class I2V:
 
         self.pipe.vae.enable_tiling()
         print("✅ Complete Framepack pipeline loaded and ready.")
-    
+
     @modal.method()
     def generate(self, data: Dict[str, Any]):
         from diffusers.utils import export_to_video
         frames = self.pipe(
             **data,
             sampling_type="inverted_anti_drifting").frames[0]
-        
+
         timestamp = create_timestamp()
         mp4_name = f"framepack-output_{timestamp}.mp4"
         mp4_path = Path(OUTPUTS_PATH) / mp4_name
@@ -103,7 +103,7 @@ class I2V:
     def handle_web_inference(data: Dict[str, Any]): 
         prompt = data.get("prompt")
         image = data.get("image")
-        
+
         if not prompt:
             return {"error": "A 'prompt' is required."}
         if not image:
@@ -120,7 +120,7 @@ class I2V:
         # Create I2V instance and call generate
         i2v_instance = I2V()
         call = i2v_instance.generate.spawn(data)
-        
+
         return JSONResponse({"call_id": call.object_id, "feature_type": FeatureType.IMAGE_TO_VIDEO})
 class FramepackI2VHYImageToVideo(ModalProviderBase):
     def __init__(self, api_key=None):
@@ -132,7 +132,7 @@ class FramepackI2VHYImageToVideo(ModalProviderBase):
         """Prepare payload specific to Wan2.1 Vace Image-to-Video model."""
         payload = super()._prepare_payload(required_args, **kwargs)
         payload["feature_type"] = FeatureType.IMAGE_TO_VIDEO
-        
+
         if is_local_path(payload['image']):
             payload['image'] = local_image_to_base64(payload['image'])
         return payload
@@ -201,12 +201,12 @@ class Interpolate:
         prompt = data.get("prompt")
         first_frame = data.get("first_frame")
         last_frame = data.get("last_frame")
-        
+
         if not prompt:
             return {"error": "A 'prompt' is required."}
         if not first_frame or not last_frame:
             return {"error": "Both 'first_frame' and 'last_frame' are required."}
-        
+
         try:
             # load_image_robust can handle both URLs and base64 strings
             first_frame = load_image_robust(first_frame)
@@ -217,10 +217,10 @@ class Interpolate:
                 data = extract_image_dimensions(first_frame, data)     
         except Exception as e:
             return {"error": f"Error processing images: {str(e)}"}
-        
+
         interpolate_instance = Interpolate()
         call = interpolate_instance.generate.spawn(data)
-        
+
         return JSONResponse({"call_id": call.object_id, "feature_type": FeatureType.INTERPOLATE})
 class FramepackI2VHYInterpolate(ModalProviderBase):
     def __init__(self, api_key=None):
@@ -229,14 +229,13 @@ class FramepackI2VHYInterpolate(ModalProviderBase):
         self.modal_app = app
         self.modal_class_name = "Interpolate"
     def _prepare_payload(self, required_args: Dict[str, Any], **kwargs) -> Dict[str, Any]:
-        """
-        Prepare payload specific to Framepack I2V HY Interpolate model.
+        """Prepare payload specific to Framepack I2V HY Interpolate model.
         Break out required args into payload
         """
         payload = super()._prepare_payload(required_args, **kwargs)
         # payload = {"prompt": required_args['prompt']}
         payload["feature_type"] = FeatureType.INTERPOLATE
-        
+
         if payload['first_frame'] is None or payload['last_frame'] is None:
             raise ValueError("Arguments 'first_frame' and 'last_frame' are required for Interpolation Video generation")
 
@@ -246,7 +245,7 @@ class FramepackI2VHYInterpolate(ModalProviderBase):
         if is_local_path(payload['last_frame']):
             # Convert local image to base64
             payload["last_frame"] = local_image_to_base64(payload['last_frame'])
-    
+
         return payload
 
 # Create a subclass with the handlers

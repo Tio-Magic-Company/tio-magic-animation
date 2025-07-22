@@ -1,5 +1,4 @@
-"""
-Standardized feature types for TioMagic
+"""Standardized feature types for TioMagic
 Defines all supported video generation features
 """
 from enum import Enum

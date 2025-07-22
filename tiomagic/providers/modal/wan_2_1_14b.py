@@ -59,13 +59,11 @@ app = modal.App(APP_NAME)
     scaledown_window=SCALEDOWN_WINDOW,
 )
 class T2V:
-    """
-    Modal app implementation
+    """Modal app implementation
     """
     @modal.enter()
     def load_models(self):
-        """
-        This method is called once when the container starts.
+        """This method is called once when the container starts.
         It downloads and initializes the models and pipeline.
         """
         import torch
@@ -142,8 +140,7 @@ class T2V:
 
     @modal.method()
     def generate(self, data: Dict[str, Any]):
-        """
-        This method runs the text-to-video generation on an existing container.
+        """This method runs the text-to-video generation on an existing container.
         """
         from diffusers.utils import export_to_video
 
@@ -171,10 +168,10 @@ class Wan21TextToVideo14B(ModalProviderBase):
     def _prepare_payload(self, required_args, **kwargs) -> Dict[str, Any]:
         """Prepare payload specific to Wan2.1 model."""
         payload = super()._prepare_payload(required_args, **kwargs)
-        
+
         # Add feature_type for routing
         payload["feature_type"] = FeatureType.TEXT_TO_VIDEO
-            
+
         return payload
 
 class WebAPI(GenericWebAPI):

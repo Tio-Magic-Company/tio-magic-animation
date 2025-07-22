@@ -82,16 +82,16 @@ class T2V:
         import torch
         from diffusers import AutoencoderKLWan, WanVACEPipeline
         from diffusers.schedulers import FlowMatchEulerDiscreteScheduler
-        
+
         print("Loading models into GPU memory...")
         self.vae = AutoencoderKLWan.from_pretrained(VACE_MODEL_ID, subfolder="vae", torch_dtype=torch.float32)
         self.pipe = WanVACEPipeline.from_pretrained(VACE_MODEL_ID, vae=self.vae, torch_dtype=torch.bfloat16)
-        
+
         flow_shift = 3.0
         self.pipe.scheduler = FlowMatchEulerDiscreteScheduler.from_config(self.pipe.scheduler.config, flow_shift=flow_shift)
         self.pipe.to("cuda")
         device = "cuda:0" if torch.cuda.is_available() else "cpu"
-         
+
         print("✅ Models loaded successfully.")
     @modal.method()
     def generate(self, data: Dict[str, Any]):
@@ -113,17 +113,17 @@ class T2V:
     def handle_web_inference(data: dict):
         """Handle text-to-video generation."""
         prompt = data.get("prompt")
-        
+
         if not prompt:
             return {"error": "A 'prompt' is required."}
-        
+
         print(f"text_to_video - prompt: {prompt}")
-        
+
         print("handle web inference data: ", data)
         # Create T2V instance and call generate
         t2v_instance = T2VAppClass()
         call = t2v_instance.generate.spawn(data)
-        
+
         return JSONResponse({"call_id": call.object_id, "feature_type": FeatureType.TEXT_TO_VIDEO})
 T2VAppClass = app_class_factory(T2V)
 
@@ -136,29 +136,29 @@ class Wan21VaceTextToVideo14B(ModalProviderBase):
     def _prepare_payload(self, required_args, **kwargs) -> Dict[str, Any]:
         """Prepare payload specific to Wan2.1 Vace model."""
         payload = super()._prepare_payload(required_args, **kwargs)
-        
+
         # Add feature_type for routing
         payload["feature_type"] = FeatureType.TEXT_TO_VIDEO
-        
+
         # print("payload: ", payload)
         return payload
-    
+
 class I2V:
     @modal.enter()
     def load_models(self):
         import torch
         from diffusers import AutoencoderKLWan, WanVACEPipeline
         from diffusers.schedulers.scheduling_unipc_multistep import UniPCMultistepScheduler
-        
+
         print("Loading models into GPU memory...")
         self.vae = AutoencoderKLWan.from_pretrained(VACE_MODEL_ID, subfolder="vae", torch_dtype=torch.float32)
         self.pipe = WanVACEPipeline.from_pretrained(VACE_MODEL_ID, vae=self.vae, torch_dtype=torch.bfloat16)
-        
+
         flow_shift = 5.0
         self.pipe.scheduler = UniPCMultistepScheduler.from_config(self.pipe.scheduler.config, flow_shift=flow_shift)
         self.pipe.to("cuda")
         device = "cuda:0" if torch.cuda.is_available() else "cpu"
-         
+
         print("✅ Models loaded successfully.")
     @modal.method()
     def generate(self, data: Dict[str, Any]):
@@ -203,19 +203,19 @@ class I2V:
         """Handle image-to-video generation."""
         print("***MODAL HANDLE WEB INFERENCE METHOD***")
 
-        
+
         prompt = data.get("prompt")
         image = data.get("image")
-        
+
         if not prompt:
             return {"error": "A 'prompt' is required."}
         if not image:
             return {"error": "An 'image' is required."}
-        
+
         # print(f"image_to_video - prompt: {prompt}")
         # print(f"image_to_video - image: {image}")
         # print(f"image_to_video - negative prompt: {negative_prompt}")
-        
+
         try:
             image = load_image_robust(image)
             data['image'] = image
@@ -227,7 +227,7 @@ class I2V:
         # Create I2V instance and call generate
         i2v_instance = I2VAppClass()
         call = i2v_instance.generate.spawn(data)
-        
+
         return JSONResponse({"call_id": call.object_id, "feature_type": FeatureType.IMAGE_TO_VIDEO})
 I2VAppClass = app_class_factory(I2V)
 
@@ -243,7 +243,7 @@ class Wan21VaceImageToVideo14B(ModalProviderBase):
 
         payload = super()._prepare_payload(required_args, **kwargs)
         payload["feature_type"] = "image_to_video"
-        
+
         if is_local_path(payload['image']):
             payload['image'] = local_image_to_base64(payload['image'])
         return payload
@@ -254,16 +254,16 @@ class Interpolate:
         import torch
         from diffusers import AutoencoderKLWan, WanVACEPipeline
         from diffusers.schedulers.scheduling_unipc_multistep import UniPCMultistepScheduler
-        
+
         print("Loading models into GPU memory...")
         self.vae = AutoencoderKLWan.from_pretrained(VACE_MODEL_ID, subfolder="vae", torch_dtype=torch.float32)
         self.pipe = WanVACEPipeline.from_pretrained(VACE_MODEL_ID, vae=self.vae, torch_dtype=torch.bfloat16)
-        
+
         flow_shift = 5.0
         self.pipe.scheduler = UniPCMultistepScheduler.from_config(self.pipe.scheduler.config, flow_shift=flow_shift)
         self.pipe.to("cuda")
         device = "cuda:0" if torch.cuda.is_available() else "cpu"
-         
+
         print("✅ Models loaded successfully.")
     @modal.method()
     def generate(self, data: Dict[str, Any]):
@@ -303,12 +303,12 @@ class Interpolate:
         prompt = data.get("prompt")
         first_frame = data.get("first_frame")
         last_frame = data.get("last_frame")
-        
+
         if not prompt:
             return {"error": "A 'prompt' is required."}
         if not first_frame or not last_frame:
             return {"error": "Both 'first_frame' and 'last_frame' are required."}
-        
+
         try:
             # load_image_robust can handle both URLs and base64 strings, return PIL.Image
             first_frame = load_image_robust(first_frame)
@@ -323,7 +323,7 @@ class Interpolate:
         # Create Interpolate instance and call generate
         interpolate_instance = InterpolateAppClass()
         call = interpolate_instance.generate.spawn(data)
-        
+
         return JSONResponse({"call_id": call.object_id, "feature_type": FeatureType.INTERPOLATE})
 InterpolateAppClass = app_class_factory(Interpolate)
 
@@ -334,14 +334,13 @@ class Wan21VaceInterpolate14B(ModalProviderBase):
         self.modal_app = app
         self.modal_class_name = "Interpolate"
     def _prepare_payload(self, required_args: Dict[str, Any], **kwargs) -> Dict[str, Any]:
-        """
-        Prepare payload specific to Wan2.1 Vace Interpolate model.
+        """Prepare payload specific to Wan2.1 Vace Interpolate model.
         Break out required args into payload
         """
         payload = super()._prepare_payload(required_args, **kwargs)
         # payload = {"prompt": required_args['prompt']}
         payload["feature_type"] = FeatureType.INTERPOLATE
-        
+
         if payload['first_frame'] is None or payload['last_frame'] is None:
             raise ValueError("Arguments 'first_frame' and 'last_frame' are required for Interpolation Video generation")
 
@@ -351,7 +350,7 @@ class Wan21VaceInterpolate14B(ModalProviderBase):
         if is_local_path(payload['last_frame']):
             # Convert local image to base64
             payload["last_frame"] = local_image_to_base64(payload['last_frame'])
-    
+
         return payload
 
 class PoseGuidance:
@@ -365,12 +364,12 @@ class PoseGuidance:
         print("Loading models into GPU memory...")
         self.vae = AutoencoderKLWan.from_pretrained(VACE_MODEL_ID, subfolder="vae", torch_dtype=torch.float32)
         self.pipe = WanVACEPipeline.from_pretrained(VACE_MODEL_ID, vae=self.vae, torch_dtype=torch.bfloat16)
-        
+
         flow_shift = 3.0
         self.pipe.scheduler = FlowMatchEulerDiscreteScheduler.from_config(self.pipe.scheduler.config, flow_shift=flow_shift)
         self.pipe.to("cuda")
         device = "cuda:0" if torch.cuda.is_available() else "cpu"
-         
+
         self.open_pose = DWposeDetector(device=device)
         print("✅ Models loaded successfully.")
     @modal.method()
@@ -389,7 +388,7 @@ class PoseGuidance:
                 f.write(data['guiding_video'])
                 f.flush()
                 video_frames = load_video(f.name)
-            
+
             num_frames = data.get('num_frames', 81)
             if len(video_frames) > num_frames:
                 video_frames = video_frames[:num_frames]
@@ -406,8 +405,8 @@ class PoseGuidance:
             # convert pose_video bytes to list of PIL.Image
             video_frames = data.pop('pose_video')
             openpose_video = [Image.fromarray(frame) for frame in video_frames]
-            
-        
+
+
         # 2. Process the start image
         print("Processing start image...")
         image = data.pop('image')
@@ -447,7 +446,7 @@ class PoseGuidance:
                 data = extract_image_dimensions(image, data)
         except Exception as e:
             return {"error": f"Error processing images: {str(e)}"}
-        
+
         try:
             video_fields = ['guiding_video', 'pose_video']
             for field in video_fields:
@@ -457,7 +456,7 @@ class PoseGuidance:
                     data[field] = video
         except Exception as e:
             return{"error": f"Error processing base64 video: {str(e)}"}
-            
+
         pose_guidance_instance = PoseGuidanceAppClass()
         call = pose_guidance_instance.generate.spawn(data)
 
@@ -471,8 +470,7 @@ class Wan21VacePoseGuidance14B(ModalProviderBase):
         self.modal_app = app
         self.modal_class_name = "PoseGuidance"
     def _prepare_payload(self, required_args: Dict[str, Any], **kwargs) -> Dict[str, Any]:
-        """
-        Prepare payload specific to Wan2.1 Vace Pose Guidance model.
+        """Prepare payload specific to Wan2.1 Vace Pose Guidance model.
         Break out required args into payload
         """
         import base64
@@ -481,7 +479,7 @@ class Wan21VacePoseGuidance14B(ModalProviderBase):
 
         if is_local_path(payload['image']):
             payload['image'] = local_image_to_base64(payload['image'])
-        
+
         # convert local video path to base64
         video_fields = ['guiding_video', 'pose_video']
         for field in video_fields:
@@ -490,7 +488,7 @@ class Wan21VacePoseGuidance14B(ModalProviderBase):
                 path = payload[field]
                 with open(path, "rb") as f:
                     payload[field] = base64.b64encode(f.read()).decode("utf-8")
-        
+
         return payload
 
 # Create a subclass with the handlers

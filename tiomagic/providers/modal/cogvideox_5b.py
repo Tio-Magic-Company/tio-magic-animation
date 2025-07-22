@@ -99,7 +99,7 @@ class T2V:
     def generate(self, data: Dict[str, Any]):
         from diffusers.utils import export_to_video
         frames = self.pipe(**data).frames[0]
-        
+
         timestamp = create_timestamp()
         mp4_name = f"cogvideox-5b-output_{timestamp}.mp4"
         mp4_path = Path(OUTPUTS_PATH) / mp4_name
@@ -130,10 +130,10 @@ class CogVideoXTextToVideo5B(ModalProviderBase):
     def _prepare_payload(self, required_args, **kwargs) -> Dict[str, Any]:
         """Prepare payload specific to Wan2.1 Vace model."""
         payload = super()._prepare_payload(required_args, **kwargs)
-        
+
         # Add feature_type for routing
         payload["feature_type"] = FeatureType.TEXT_TO_VIDEO
-        
+
         # print("payload: ", payload)
         return payload
 

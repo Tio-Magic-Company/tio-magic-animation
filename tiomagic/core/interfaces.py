@@ -16,4 +16,3 @@ class TextToVideoInterface(ABC):
             str: Path to the generated video or video data
         """
         pass
-    

@@ -4,8 +4,7 @@ from ...core.utils.modal_helpers import Generation
 
 
 class LocalProviderBase:
-    """
-    Base class to interface with local implementation
+    """Base class to interface with local implementation
     """
     def __init__(self):
         self.module_path = os.path.abspath(__file__)
@@ -13,8 +12,7 @@ class LocalProviderBase:
         self.app_name = None
         self.feature = None
     def _validate_config(self):
-        """
-        Validate that required configuration is set
+        """Validate that required configuration is set
         """
         if not self.app_name:
             raise ValueError("Subclass must set 'app_name'")
@@ -33,7 +31,7 @@ class LocalProviderBase:
         prompt = required_args.get('prompt', None)
         if required_args is None or prompt is None:
             raise ValueError("required_args and argument 'prompt' are required")
-        
+
         payload = {"prompt": prompt}            
 
         for key, value in required_args.items():
@@ -43,11 +41,10 @@ class LocalProviderBase:
         for key, value in kwargs.items():
             if value is not None:
                 payload[key] = value
-                
+
         return payload
     def generate(self, required_args: Dict[str, Any], **kwargs) -> Dict[str, Any]:
-        """
-        This is the main entry point for generation.
+        """This is the main entry point for generation.
         Args:
             required_args: The generation prompt
             **kwargs: Additional generation parameters
@@ -69,7 +66,7 @@ class LocalProviderBase:
         try:
             payload = self._prepare_payload(required_args, **kwargs)
 
-            
+
             # This should be implemented by subclasses
             # For now, return a basic response
             generation.update(
@@ -77,7 +74,7 @@ class LocalProviderBase:
                 status="completed",
                 message="Local generation completed"
             )
-            
+
             return generation.to_dict()
 
         except Exception as e:

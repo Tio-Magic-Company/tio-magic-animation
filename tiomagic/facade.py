@@ -1,9 +1,6 @@
-import base64
 from datetime import datetime
-from io import BytesIO
 import sys
 from typing import Any, Dict
-import PIL.Image
 from uuid import uuid4
 from .core.registry import registry
 from .core.config import Configuration
@@ -27,14 +24,14 @@ class TioMagic:
         impl_class = registry.get_implementation("text_to_video", model, provider)
         implementation = self._create_implementation(impl_class, provider)
         print("implementation: ", implementation)
-        
+
         # if required_args is None or required_args['prompt'] is None:
         #     print(f"Argument 'prompt' is required for text to video generation")
         #     return
         valid, params, error_msg = validate_parameters("text_to_video", model, required_args, kwargs)
         if not valid:
             raise ValueError(f"Parameter validation failed: {error_msg}")
-        
+
         print(f"Validated parameters: ", params)
 
         # Start job and return job object for tracking
@@ -54,9 +51,9 @@ class TioMagic:
         except Exception as e:
             job.update(status=JobStatus.FAILED)
             print(f"Error starting generation: {e}")
-        
+
         return job
-    
+
     def image_to_video(self, model=None, required_args: Dict[str, Any]= None, **kwargs):
         provider = self._config.get_provider()
         impl_class = registry.get_implementation("image_to_video", model, provider)
@@ -66,7 +63,7 @@ class TioMagic:
         valid, params, error_msg = validate_parameters("image_to_video", model, required_args, kwargs)
         if not valid:
             raise ValueError(f"Parameter validation failed: {error_msg}")
-        
+
         print(f"Validated parameters: ", params)
 
         job_id = str(uuid4())
@@ -84,9 +81,9 @@ class TioMagic:
         except Exception as e:
             job.update(status=JobStatus.FAILED)
             print(f"Error starting generation: {e}")
-        
+
         return job
-    
+
     def interpolate(self, model=None, required_args: Dict[str, Any] = None, **kwargs):
         provider = self._config.get_provider()
         impl_class = registry.get_implementation("interpolate", model, provider)
@@ -96,9 +93,9 @@ class TioMagic:
         valid, params, error_msg = validate_parameters("interpolate", model, required_args, kwargs)
         if not valid:
             raise ValueError(f"Parameter validation failed: {error_msg}")
-        
+
         print(f"Validated parameters: ", params)
-        
+
         job_id = str(uuid4())
         job = Job(
             job_id=job_id,
@@ -117,7 +114,7 @@ class TioMagic:
         except Exception as e:
             job.update(status=JobStatus.FAILED)
             print(f"Error starting generation: {e}")
-        
+
         return job
 
     def pose_guidance(self, model=None, required_args: Dict[str, Any] = None, **kwargs):
@@ -129,7 +126,7 @@ class TioMagic:
         valid, params, error_msg = validate_parameters("pose_guidance", model, required_args, kwargs)
         if not valid:
             raise ValueError(f"Parameter validation failed: {error_msg}")
-        
+
         print(f"Validated parameters: ", params)
 
         job_id = str(uuid4())
@@ -150,7 +147,7 @@ class TioMagic:
         except Exception as e:
             job.update(status=JobStatus.FAILED)
             print(f"Error starting generation: {e}")
-        
+
         return job
 
     def check_generation_status(self, job_id):
@@ -158,7 +155,7 @@ class TioMagic:
         if not job:
             print(f"Job {job_id} not found")
             sys.exit(1)
-        
+
         # Check current status
         print("Check job: ", job.job_id)
 

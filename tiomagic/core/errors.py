@@ -1,5 +1,4 @@
-"""
-This file defines exception hierarchy for TioMagic Animation
+"""This file defines exception hierarchy for TioMagic Animation
 """
 
 class TioMagicError(Exception):

@@ -62,7 +62,6 @@ app = modal.App(APP_NAME)
 class Interpolate:
     @modal.enter()
     def load_models(self):
-        import numpy as np
         import torch
         from diffusers import AutoencoderKLWan, WanImageToVideoPipeline
         from transformers import CLIPVisionModel
@@ -76,7 +75,7 @@ class Interpolate:
             print(f"✅ {time.time() - start_time:.2f}s: Loading image_encoder...")
             image_encoder = CLIPVisionModel.from_pretrained(MODEL_ID, subfolder="image_encoder", torch_dtype=torch.float32)
             print(f"✅ {time.time() - start_time:.2f}s: image_encoder loaded.")
-            
+
             print(f"✅ {time.time() - start_time:.2f}s: Loading VAE...")
             vae = AutoencoderKLWan.from_pretrained(MODEL_ID, subfolder="vae", torch_dtype=torch.float32)
             print(f"✅ {time.time() - start_time:.2f}s: VAE loaded.")
@@ -149,12 +148,12 @@ class Interpolate:
         prompt = data.get("prompt")
         first_frame = data.get("first_frame")
         last_frame = data.get("last_frame")
-        
+
         if not prompt:
             return {"error": "A 'prompt' is required."}
         if not first_frame or not last_frame:
             return {"error": "Both 'first_frame' and 'last_frame' are required."}
-        
+
         try:
             # load_image_robust can handle both URLs and base64 strings
             first_frame = load_image_robust(first_frame)
@@ -165,11 +164,11 @@ class Interpolate:
                 data = extract_image_dimensions(image, data)         
         except Exception as e:
             return {"error": f"Error processing images: {str(e)}"}
-        
+
         # Create Interpolate instance and call generate
         interpolate_instance = Interpolate()
         call = interpolate_instance.generate.spawn(data)
-        
+
         return JSONResponse({"call_id": call.object_id, "feature_type": FeatureType.INTERPOLATE})
 
 class Wan21FlfvInterpolate14b720p(ModalProviderBase):
@@ -179,14 +178,13 @@ class Wan21FlfvInterpolate14b720p(ModalProviderBase):
         self.modal_app = app
         self.modal_class_name = "Interpolate"
     def _prepare_payload(self, required_args: Dict[str, Any], **kwargs) -> Dict[str, Any]:
-        """
-        Prepare payload specific to Wan2.1 Vace Interpolate model.
+        """Prepare payload specific to Wan2.1 Vace Interpolate model.
         Break out required args into payload
         """
         payload = super()._prepare_payload(required_args, **kwargs)
         # payload = {"prompt": required_args['prompt']}
         payload["feature_type"] = FeatureType.INTERPOLATE
-        
+
         if payload['first_frame'] is None or payload['last_frame'] is None:
             raise ValueError("Arguments 'first_frame' and 'last_frame' are required for Interpolation Video generation")
 
@@ -196,7 +194,7 @@ class Wan21FlfvInterpolate14b720p(ModalProviderBase):
         if is_local_path(payload['last_frame']):
             # Convert local image to base64
             payload["last_frame"] = local_image_to_base64(payload['last_frame'])
-    
+
         return payload
 
 # Create a subclass with the handlers
@@ -222,4 +220,3 @@ registry.register(
     provider="modal",
     implementation=Wan21FlfvInterpolate14b720p
 )
-        

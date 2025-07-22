@@ -1,21 +1,8 @@
-"""
-Modal API helper functions for checking and deploying Modal applications.
+"""Modal API helper functions for checking and deploying Modal applications.
 These utilities help manage the lifecycle of Modal apps across your project.
 """
 import os
-from pathlib import Path
-import sys
-import multiprocessing
-import subprocess
-import time
-import logging
-from fastapi import Body, UploadFile, HTTPException
-from fastapi.responses import JSONResponse
-import requests
-from typing import Dict, Any, Optional, Union, List, Tuple
-import base64
-import io
-import mimetypes
+from typing import Dict, Any, Optional
 from dataclasses import dataclass, asdict
 import modal
 from modal.exception import NotFoundError
@@ -34,7 +21,7 @@ class Generation:
 
     def to_dict(self):
         return asdict(self)
-    
+
     def update(self, **kwargs):
         for key, value in kwargs.items():
             if hasattr(self, key):
@@ -42,8 +29,7 @@ class Generation:
 
 """MODAY DEPLOYMENT"""
 def check_status(app_name: str) -> Dict[str, Any]:
-    """
-    Check if a Modal app is already deployed and responsive.
+    """Check if a Modal app is already deployed and responsive.
     
     Parameters:
     - app_name: The name of your Modal app (str)
@@ -77,8 +63,7 @@ def get_endpoints(app) -> list[str]:
     return endpoints
 
 def check_modal_app_deployment(app, app_name) -> Dict[str, Any]:
-    """
-    Check whether Modal app is deployed, and if endpoints are available.
+    """Check whether Modal app is deployed, and if endpoints are available.
     Deploys Modal app if not yet deployed
     
     Parameters:
@@ -144,7 +129,7 @@ def load_image_robust(image_source):
         if isinstance(image_source, str) and image_source.startswith(('http://', 'https://')):
             print(f"Loading image from URL: {image_source}")
             return load_image(image_source)
-        
+
         # Check if it's a base64 string
         elif isinstance(image_source, str) and image_source.startswith('data:image'):
             print(f"Loading image from base64 data URL")
@@ -153,19 +138,19 @@ def load_image_robust(image_source):
                 base64_str = image_source.split(",")[1]
             else:
                 base64_str = image_source
-            
+
             image_data = base64.b64decode(base64_str)
             image = PIL.Image.open(BytesIO(image_data)).convert('RGB')
             return image
-        
+
         # Check if it's a local file path (for Modal container)
         elif isinstance(image_source, str) and os.path.exists(image_source):
             print(f"Loading image from local path: {image_source}")
             return load_image(image_source)
-        
+
         else:
             raise ValueError(f"Unsupported image source format: {type(image_source)}")
-            
+
     except Exception as e:
         print(f"Error loading image from {image_source}: {e}")
         raise
