@@ -34,8 +34,6 @@ jobs:
         # Check only for critical errors (exclude ignored rules)
         ruff check . --output-format=github \
           --select=E9,F63,F7,F82,F401,F405,F524,F525,F541,F601,F602,F621,F622,F631,F632,F701,F702,F704,F706,F811,F841
-
-Copy code
   
   # Style checks that are informational only
   style-lint:
