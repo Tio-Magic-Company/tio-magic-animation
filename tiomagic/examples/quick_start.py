@@ -16,8 +16,8 @@ def text_to_video_example():
     # tm.text_to_video(model="cogvideox-5b", required_args=required_args, **optional_args)
 
 def image_to_video_example():
-    # tm.configure(provider="modal")
-    tm.configure(provider="local")
+    tm.configure(provider="modal")
+    # tm.configure(provider="local")
     # prompt = "CG animation style, a small blue bird takes off from the ground, flapping its wings. The bird's feathers are delicate, with a unique pattern on its chest. The background shows a blue sky with white clouds under bright sunshine. The camera follows the bird upward, capturing its flight and the vastness of the sky from a close-up, low-angle perspective."
     # image = "https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/flf2v_input_first_frame.png"
     image = "/Users/karenlin/Documents/tm-animation/tio-magic-animation/images/test_blob.png"
@@ -32,14 +32,14 @@ def image_to_video_example():
         "image" : image
     }
     optional_args = {
-        "negativePrompt": "blurry, low quality, getty",
+        "negative_prompt": "blurry, low quality, getty",
     }
 
     # tm.image_to_video(model="framepack-i2v-hy", required_args=required_args, **optional_args)
     # tm.image_to_video(model="cogvideox-5b-image-to-video", required_args=required_args, **optional_args)
-    # tm.image_to_video(model="wan2.1-vace-14b", required_args=required_args, **optional_args)
+    tm.image_to_video(model="wan2.1-vace-14b", required_args=required_args, **optional_args)
     # tm.image_to_video(model="wan2.1-i2v-14b-720p", required_args=required_args, **optional_args)
-    tm.image_to_video(model="veo-2.0-generate-001", required_args=required_args, **optional_args)
+    # tm.image_to_video(model="veo-2.0-generate-001", required_args=required_args, **optional_args)
 
 def interpolate_example():
     tm.configure(provider="modal")
@@ -100,10 +100,10 @@ if __name__ == "__main__":
     status = "5d55c482-e6be-4155-8927-a8223b64a752"
 
     # text_to_video_example()
-    # image_to_video_example()
+    image_to_video_example()
     # interpolate_example()
     # pose_guidance_example()
 
-    check_status(status)
+    # check_status(status)
 
 

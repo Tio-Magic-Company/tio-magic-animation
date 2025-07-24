@@ -8,9 +8,11 @@ from typing import Any, Dict
 from ...core.registry import registry
 from ...core.utils import prepare_video_and_mask, load_image_robust, is_local_path, local_image_to_base64, create_timestamp, load_video_robust, extract_image_dimensions
 from ...core.feature_types import FeatureType
+from ...core.schemas import FEATURE_SCHEMAS
 
 # --- Configuration ---
 APP_NAME = "test-wan-2.1-vace-t2v-14b"
+MODEL_NAME = "wan2.1-vace-14b"
 CACHE_NAME = f"{APP_NAME}-cache"
 CACHE_PATH = "/cache"
 OUTPUTS_NAME = f'{APP_NAME}-outputs'
@@ -99,7 +101,7 @@ class T2V:
         frames = self.pipe(**data).frames[0]
 
         timestamp = create_timestamp()
-        mp4_name = f"wan-vace-output_{timestamp}.mp4"
+        mp4_name = f"{MODEL_NAME}-t2v-output_{timestamp}.mp4"
         mp4_path = Path(OUTPUTS_PATH) / mp4_name
         export_to_video(frames, str(mp4_path), fps=16)
         outputs_volume.commit()
@@ -166,11 +168,13 @@ class I2V:
         print("***MODAL GENERATE METHOD***")
         print("Starting video generation process...")
 
+        i2v_schema = FEATURE_SCHEMAS["image_to_video"][MODEL_NAME]
+
         # Define video parameters
-        height = data.get('height', 480)
-        width = data.get('width', 832)
+        height = data.get('height', i2v_schema["optional"]["height"]["default"])
+        width = data.get('width', i2v_schema["optional"]["width"]["default"])
         print('width and height in generate, ', width, height)
-        num_frames = data.get('num_frames', 81)
+        num_frames = data.get('num_frames', i2v_schema["optional"]["num_frames"]["default"])
 
         # Prepare the data for the pipeline
         video, mask = prepare_video_and_mask(data.get('image'), height, width, num_frames)
@@ -187,7 +191,7 @@ class I2V:
         print("Pipeline execution finished.")
 
         timestamp = create_timestamp()
-        mp4_name = f"wan21-vace-i2v-output_{timestamp}.mp4"
+        mp4_name = f"{MODEL_NAME}-i2v-output_{timestamp}.mp4"
         mp4_path = Path(OUTPUTS_PATH) / mp4_name
         export_to_video(output_frames, str(mp4_path), fps=16)
         outputs_volume.commit()
@@ -268,9 +272,10 @@ class Interpolate:
         import torch
         print("Starting video generation process...")
 
-        height = data.get('height', 512)
-        width = data.get('width', 512)
-        num_frames = data.get('num_frames', 81)
+        interpolate_schema = FEATURE_SCHEMAS["interpolate"][MODEL_NAME]
+        height = data.get('height', interpolate_schema["optional"]["height"]["default"])
+        width = data.get('width', interpolate_schema["optional"]["width"]["default"])
+        num_frames = data.get('num_frames', interpolate_schema["optional"]["num_frames"]["default"])
         video, mask = prepare_video_and_mask(img=data.get('first_frame'), height=height, width=width, num_frames=num_frames, last_frame=data.get('last_frame'))
         data.pop('first_frame')
         data.pop('last_frame')
@@ -284,7 +289,7 @@ class Interpolate:
         print("Pipeline execution finished.")
 
         timestamp = create_timestamp()
-        mp4_name = f"wan21-vace-interpolate-output_{timestamp}.mp4"
+        mp4_name = f"{MODEL_NAME}-interpolate-output_{timestamp}.mp4"
         mp4_path = Path(OUTPUTS_PATH) / mp4_name
         export_to_video(output_frames, str(mp4_path), fps=16)
         outputs_volume.commit()
@@ -378,6 +383,8 @@ class PoseGuidance:
         import io
         import tempfile
 
+        pose_guidance_schema = FEATURE_SCHEMAS["pose_guidance"][MODEL_NAME]
+
         # if guiding_video provided, process video bytes and extract poses into PIL.Image
         if data.get('guiding_video', None) is not None:
             print("Processing 'guiding_video' to extract poses")
@@ -386,14 +393,14 @@ class PoseGuidance:
                 f.flush()
                 video_frames = load_video(f.name)
 
-            num_frames = data.get('num_frames', 81)
+            num_frames = data.get('num_frames', pose_guidance_schema["optional"]["num_frames"]["default"])
             if len(video_frames) > num_frames:
                 video_frames = video_frames[:num_frames]
             elif len(video_frames) < num_frames:
                 num_frames = len(video_frames)
 
-            width = data.get('width', 832)
-            height = data.get('height', 480)
+            width = data.get('width', pose_guidance_schema["optional"]["width"]["default"])
+            height = data.get('height', pose_guidance_schema["optional"]["height"]["default"])
             video_frames = [frame.convert("RGB").resize((width, height)) for frame in video_frames]
             print(f"Extracting poses from {len(video_frames)} frames...")
             openpose_video = [self.open_pose(frame, output_type="pil", include_hands=True, include_face=True) for frame in video_frames]
@@ -423,7 +430,7 @@ class PoseGuidance:
         print("Pipeline execution finished.")
 
         timestamp = create_timestamp()
-        mp4_name = f"wan21-vace-pose-guidance-output_{timestamp}.mp4"
+        mp4_name = f"{MODEL_NAME}-pose-guidance-output_{timestamp}.mp4"
         mp4_path = Path(OUTPUTS_PATH) / mp4_name
         export_to_video(output_frames, str(mp4_path), fps=16)
         outputs_volume.commit()
@@ -503,25 +510,25 @@ WebAPIClass = app_class_factory(WebAPI)
 # Register with the system registry
 registry.register(
     feature=FeatureType.TEXT_TO_VIDEO,
-    model="wan2.1-vace-14b",
+    model=MODEL_NAME,
     provider="modal",
     implementation=Wan21VaceTextToVideo14B
 )
 registry.register(
     feature=FeatureType.IMAGE_TO_VIDEO,
-    model="wan2.1-vace-14b",
+    model=MODEL_NAME,
     provider="modal",
     implementation=Wan21VaceImageToVideo14B
 )
 registry.register(
     feature=FeatureType.INTERPOLATE,
-    model="wan2.1-vace-14b",
+    model=MODEL_NAME,
     provider="modal",
     implementation=Wan21VaceInterpolate14B
 )
 registry.register(
     feature=FeatureType.POSE_GUIDANCE,
-    model="wan2.1-vace-14b",
+    model=MODEL_NAME,
     provider="modal",
     implementation=Wan21VacePoseGuidance14B,
 )

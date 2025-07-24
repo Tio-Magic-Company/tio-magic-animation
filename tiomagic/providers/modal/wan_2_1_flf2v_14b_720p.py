@@ -8,8 +8,11 @@ from typing import Any, Dict
 from ...core.registry import registry
 from ...core.utils import load_image_robust, is_local_path, local_image_to_base64, create_timestamp, extract_image_dimensions
 from ...core.feature_types import FeatureType
+from ...core.schemas import FEATURE_SCHEMAS
+
 
 APP_NAME = "test-wan-2.1-flf2v-14b-720p"
+MODEL_NAME = "wan2.1-flf2v-14b-720p"
 CACHE_NAME = f"{APP_NAME}-cache"
 CACHE_PATH = "/cache"
 OUTPUTS_NAME = f"{APP_NAME}-outputs"
@@ -119,12 +122,13 @@ class Interpolate:
     @modal.method()
     def generate(self, data: Dict[str, Any]):
         from diffusers.utils import export_to_video
+        interpolate_schema = FEATURE_SCHEMAS["interpolate"][MODEL_NAME]
 
         first_frame = data.get('first_frame')
         last_frame = data.get('last_frame')
         # LOAD_IMAGE these frames
-        height = data.get('height', 480)
-        width = data.get('width', 832)
+        height = data.get('height', interpolate_schema["optional"]["height"]["default"])
+        width = data.get('width', interpolate_schema["optional"]["height"]["default"])
 
         data['first_frame'], height, width = self.aspect_ratio_resize(first_frame)
         if last_frame.size != data['first_frame'].size:
@@ -134,7 +138,7 @@ class Interpolate:
         output = self.pipe(**data).frames[0]
 
         timestamp = create_timestamp()
-        mp4_name = f"wan21-i2v-14b-interpolate-output_{timestamp}.mp4"
+        mp4_name = f"{MODEL_NAME}-interpolate-output_{timestamp}.mp4"
         mp4_path = Path(OUTPUTS_PATH) / mp4_name
         export_to_video(output, str(mp4_path), fps=16)
         outputs_volume.commit()

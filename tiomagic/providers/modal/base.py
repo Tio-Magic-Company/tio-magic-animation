@@ -294,7 +294,7 @@ class GenericWebAPI:
 
     @modal.fastapi_endpoint(method="POST")
     def web_inference(self, data: dict = Body(...)):
-        print("DATA OF WEB INFERENCE, ", data)
+        print("POST WEB INFERENCE")
         feature_type = data.pop("feature_type", None)
 
         if not feature_type:
