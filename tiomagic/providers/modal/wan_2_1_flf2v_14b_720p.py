@@ -1,6 +1,5 @@
 import modal
 from pathlib import Path
-from fastapi import Body
 from fastapi.responses import JSONResponse
 
 from .base import GPUType, GenericWebAPI, ModalProviderBase

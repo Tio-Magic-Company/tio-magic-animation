@@ -1,7 +1,6 @@
 import modal
 from pathlib import Path
-from fastapi import Body
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import JSONResponse
 
 from .base import GPUType, GenericWebAPI, ModalProviderBase
 from typing import Any, Dict
@@ -164,7 +163,6 @@ class I2V:
     def generate(self, data: Dict[str, Any]):
         import torch
         from diffusers.utils import export_to_video
-        import io
         print("***MODAL GENERATE METHOD***")
         print("Starting video generation process...")
 
@@ -378,7 +376,6 @@ class PoseGuidance:
     def generate(self, data: Dict[str, Any]):
         from PIL import Image
         import PIL.Image
-        import torch
         from diffusers.utils import export_to_video, load_video
         import io
         import tempfile

@@ -3,9 +3,9 @@ from dotenv import load_dotenv
 
 def text_to_video_example():
     tm.configure(provider="modal")
-    # prompt = "A serene morning in a dense pine forest, soft golden sunlight streaming through the misty trees, gentle rays creating a magical, peaceful atmosphere. Birds flutter between branches, and a small stream glistens as it flows over smooth rocks."
+    prompt = "A serene morning in a dense pine forest, soft golden sunlight streaming through the misty trees, gentle rays creating a magical, peaceful atmosphere. Birds flutter between branches, and a small stream glistens as it flows over smooth rocks."
     # prompt = "A suited astronaut, with the red dust of Mars clinging to their boots, reaches out to shake hands with an alien being, their skin a shimmering blue, under the pink-tinged sky of the fourth planet. In the background, a sleek silver rocket, a beacon of human ingenuity, stands tall, its engines powered down, as the two representatives of different worlds exchange a historic greeting amidst the desolate beauty of the Martian landscape."
-    prompt = "A golden retriever, sporting sleek black sunglasses, with its lengthy fur flowing in the breeze, sprints playfully across a rooftop terrace, recently refreshed by a light rain. The scene unfolds from a distance, the dog's energetic bounds growing larger as it approaches the camera, its tail wagging with unrestrained joy, while droplets of water glisten on the concrete behind it. The overcast sky provides a dramatic backdrop, emphasizing the vibrant golden coat of the canine as it dashes towards the viewer."
+    # prompt = "A golden retriever, sporting sleek black sunglasses, with its lengthy fur flowing in the breeze, sprints playfully across a rooftop terrace, recently refreshed by a light rain. The scene unfolds from a distance, the dog's energetic bounds growing larger as it approaches the camera, its tail wagging with unrestrained joy, while droplets of water glisten on the concrete behind it. The overcast sky provides a dramatic backdrop, emphasizing the vibrant golden coat of the canine as it dashes towards the viewer."
     required_args = {
         "prompt": prompt,
     } 
@@ -91,19 +91,21 @@ def pose_guidance_example():
 def check_status(job_id: str):
     # tm.configure(provider="modal")
     tm.check_generation_status(job_id)
-
+def cancel_job(job_id: str):
+    tm.cancel_job(job_id)
 
 if __name__ == "__main__":
     load_dotenv()
     # check for keys in appropriate provider files
 
-    status = "5d55c482-e6be-4155-8927-a8223b64a752"
+    status = "cebf7b0b-0f43-452b-98dc-9f52434d4af9"
 
     # text_to_video_example()
-    image_to_video_example()
+    # image_to_video_example()
     # interpolate_example()
     # pose_guidance_example()
 
     # check_status(status)
+    cancel_job(status)
 
 

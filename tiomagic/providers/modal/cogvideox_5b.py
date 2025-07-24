@@ -1,7 +1,6 @@
 import modal
 from pathlib import Path
-from fastapi import Body
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import JSONResponse
 
 from .base import GPUType, GenericWebAPI, ModalProviderBase
 from typing import Any, Dict
@@ -64,7 +63,6 @@ class T2V:
         from diffusers import CogVideoXPipeline, AutoModel
         from diffusers.quantizers import PipelineQuantizationConfig
         from diffusers.quantizers.quantization_config import TorchAoConfig
-        from diffusers.hooks import apply_group_offloading
 
         print("Loading models...")
 

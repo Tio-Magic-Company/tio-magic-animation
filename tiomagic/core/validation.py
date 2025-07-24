@@ -1,4 +1,4 @@
-from typing import Dict, Any, Tuple, Optional, List, Union
+from typing import Dict, Any, Tuple, List, Union
 import os
 from urllib.parse import urlparse
 

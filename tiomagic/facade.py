@@ -1,4 +1,3 @@
-from datetime import datetime
 import sys
 from typing import Any, Dict
 from uuid import uuid4
@@ -6,6 +5,7 @@ from .core.registry import registry
 from .core.config import Configuration
 from .core.jobs import Job, JobStatus
 from .core.validation import validate_parameters
+from .core.utils import create_timestamp
 
 class TioMagic:
     def __init__(self):
@@ -165,13 +165,31 @@ class TioMagic:
                 impl_class = registry.get_implementation(job.feature, job.model, job.provider)
                 implementation = self._create_implementation(impl_class, job.provider)
                 job.check_status(lambda: implementation.check_generation_status(job.generation))
-                job.update(last_updated= datetime.now().strftime("%Y%m%d_%H%M%S"))
+                job.update(last_updated= create_timestamp())
                 # checks generation status and updates generation_log.json
 
             except Exception as e:
                 job.update(status=JobStatus.FAILED)
                 print(f"Error checking generation status: {e}")
         job.save()
+    
+    def cancel_job(self, job_id):
+        job = Job.get_job(job_id)
+        if not job:
+            print(f"Job {job_id} not found")
+            sys.exit(1)
+        print("Cancel job: ", job.job_id)
+        if job.generation and job.generation["call_id"]:
+            try:
+                impl_class = registry.get_implementation(job.feature, job.model, job.provider)
+                implementation = self._create_implementation(impl_class, job.provider)
+                job.cancel_job(lambda: implementation.cancel_job(job.generation))
+                job.update(last_updated= create_timestamp())
+            except Exception as e:
+                job.update(status=JobStatus.FAILED)
+                print(f"Error checking generation status: {e}")
+        job.save()
+        
 
     def _create_implementation(self, impl_class, provider):
         """create an implementation instance with appropriate config"""

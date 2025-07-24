@@ -19,7 +19,6 @@ def is_local_path(path: str) -> bool:
 
 def local_image_to_base64(image_path: str) -> str:
     """Convert local image to base64 string."""
-    import PIL.Image
     import base64
 
     try:
@@ -38,7 +37,6 @@ def local_image_to_base64(image_path: str) -> str:
 
 def extract_image_dimensions(image, data: Dict[str, Any]) -> Dict[str, Any]:
     """get PIL image dimensions and set them in data"""
-    import PIL.Image
 
     width, height = image.size
     data['width'] = width
