@@ -3,15 +3,11 @@ from fastapi.responses import JSONResponse
 import os
 from typing import Any, Dict
 
-from ...core.utils.utils import create_timestamp
 from ...core.registry import registry
-from ...core.utils import is_local_path, local_image_to_base64
+from ...core.utils import is_local_path
 from ...core.utils.modal_helpers import Generation
 from .base import LocalProviderBase
 import base64
-from PIL import Image
-import PIL.Image
-from ...core.jobs import Job, JobStatus
 from ...core.feature_types import FeatureType
 
 

@@ -7,7 +7,7 @@ import time
 import traceback
 from pathlib import Path
 import json
-from typing import Dict, Optional, List
+from typing import Dict, Optional
 import os
 
 from .utils import create_timestamp
@@ -152,6 +152,23 @@ class Job:
             traceback.print_exc()
 
         self.save()
+    
+    def cancel_job(self, func):
+        """Cancel the job execution asynchronously
+        Args:
+            func (callable): Function to execute
+        """
+        try:
+            result = func()
+            if result is not None:
+                self.generation = result
+        except Exception as e:
+            self.error = str(e)
+            self.generation['status'] = JobStatus.FAILED
+            traceback.print_exc()
+
+        self.save()
+
 
     def save(self):
         """Save job to log file

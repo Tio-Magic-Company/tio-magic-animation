@@ -4,11 +4,10 @@ from fastapi import Body
 from fastapi.responses import JSONResponse, StreamingResponse
 import modal
 import os
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, Optional
 from enum import Enum
-from datetime import datetime
 
-from ...core.utils import check_modal_app_deployment, Generation
+from ...core.utils import check_modal_app_deployment, Generation, create_timestamp
 from ...core.jobs import JobStatus
 import requests
 
@@ -68,11 +67,10 @@ class ModalProviderBase:
 
         self._validate_config()
 
-        from datetime import datetime
         print(f"Running {self.app_name} generate with prompt: {required_args['prompt']}")
 
         generation = Generation(
-            timestamp=datetime.now().strftime("%Y%m%d_%H%M%S"),
+            timestamp=create_timestamp(),
             required_args=required_args,
             optional_args=kwargs
         )
@@ -209,7 +207,6 @@ class ModalProviderBase:
             Updated generation object with status and results
         """
         from modal.functions import FunctionCall
-        from datetime import datetime
         print("MODAL CHECK GENERATION STATUS")
 
         try:
@@ -223,7 +220,7 @@ class ModalProviderBase:
             print(f"Video saved to: {video_path}")
             generation.update(
                 status=JobStatus.COMPLETED, 
-                timestamp=datetime.now().strftime("%Y%m%d_%H%M%S"),
+                timestamp=create_timestamp(),
                 message=f"video completed and saved to {video_path}",
                 result_video=video_path
             )
@@ -233,13 +230,29 @@ class ModalProviderBase:
             generation.update(
                 status=JobStatus.RUNNING,
                 message="generation is not complete yet",
-                timestamp=datetime.now().strftime("%Y%m%d_%H%M%S")
+                timestamp=create_timestamp()
             )
 
         except Exception as e:
             print("EXCEPTION IN MODAL CHECK GEN STATUS", e)
             self._handle_generation_error(e, generation)
 
+        return generation
+
+    def cancel_job(self, generation: Generation) -> Generation:
+        from modal.functions import FunctionCall
+        print("MODAL CANCEL JOB")
+        try:
+            fc = FunctionCall.from_id(generation["call_id"])
+            fc.cancel()
+            generation.update(
+                status=JobStatus.CANCELED,
+                message="generation canceled",
+                timestamp = create_timestamp()
+            )
+        except Exception as e:
+            print("EXCEPTION IN MODAL CANCEL JOB", e)
+            self._handle_generation_error(e, generation)
         return generation
 
     def _save_video_file(self, video_bytes: bytes, call_id: str) -> str:
@@ -252,7 +265,7 @@ class ModalProviderBase:
         Returns:
             Path to the saved video file
         """
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        timestamp = create_timestamp()
         video_filename = f"{call_id}_{timestamp}.mp4"
 
         # Get the directory of this file and save to the same directory
