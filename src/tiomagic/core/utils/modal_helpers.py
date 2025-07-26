@@ -2,30 +2,11 @@
 These utilities help manage the lifecycle of Modal apps across your project.
 """
 import os
-from typing import Dict, Any, Optional
-from dataclasses import dataclass, asdict
+from typing import Dict, Any
 import modal
 from modal.exception import NotFoundError
 import PIL.Image
 
-"""MODAL VIDEO GENERATION TRACKING"""
-@dataclass
-class Generation:
-    call_id: Optional[str] = None
-    status: Optional[str] = None
-    message: str = ''
-    timestamp: Optional[str] = None
-    required_args: Optional[dict] = None
-    optional_args: Optional[dict] = None
-    result_video: Optional[str] = None
-
-    def to_dict(self):
-        return asdict(self)
-
-    def update(self, **kwargs):
-        for key, value in kwargs.items():
-            if hasattr(self, key):
-                setattr(self, key, value)
 
 """MODAY DEPLOYMENT"""
 def check_status(app_name: str) -> Dict[str, Any]:

@@ -98,7 +98,7 @@ if __name__ == "__main__":
     load_dotenv()
     # check for keys in appropriate provider files
 
-    status = "cebf7b0b-0f43-452b-98dc-9f52434d4af9"
+    status = "b8dbbfde-15b9-4788-ad0d-f1d60563f2d0"
 
     # text_to_video_example()
     # image_to_video_example()

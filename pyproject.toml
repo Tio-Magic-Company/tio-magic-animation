@@ -52,12 +52,17 @@ dev = [
 # Issues = "https://github.com/yourusername/tio-magic-animation/issues"
 
 # Hatchling configuration
+[tool.hatch.build]
+include = [
+  "src/*"
+]
+
 [tool.hatch.build.targets.wheel]
-packages = ["tiomagic"]
+packages = ["src/tiomagic"]
 
 [tool.hatch.build.targets.sdist]
 include = [
-    "/tiomagic",
+    "src/*",
     # "/tests",
     "/*.md",
     "/*.toml",

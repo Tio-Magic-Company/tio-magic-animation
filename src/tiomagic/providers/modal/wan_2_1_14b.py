@@ -5,7 +5,10 @@ from .base import GPUType, GenericWebAPI, ModalProviderBase
 from typing import Any, Dict
 from ...core.registry import registry
 from ...core.utils import create_timestamp
-from ...core.feature_types import FeatureType
+from ...core.constants import FeatureType
+from ...core.errors import (
+    APIError
+)
 
 VOLUME_NAME = "test-wan-2.1-t2v-14b-cache"
 CACHE_PATH = "/cache" 
@@ -132,8 +135,7 @@ class T2V:
             print(f"✅ {time.time() - start_time:.2f}s: Pipeline ready. Models loaded successfully.")
 
         except Exception as e:
-            print(f"❌ {time.time() - start_time:.2f}s: An error occurred: {e}")
-            raise
+            raise APIError(response_body=str(e))
         print("Models loaded successfully.")
 
     @modal.method()

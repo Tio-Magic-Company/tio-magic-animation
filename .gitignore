@@ -6,7 +6,6 @@ venv/
 generation_log.json
 generation_log.txt
 *.mp4
-tm_animate/
 images/
 videos/
 output_videos/

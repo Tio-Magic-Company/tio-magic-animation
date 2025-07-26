@@ -2,11 +2,13 @@ import modal
 from pathlib import Path
 from fastapi.responses import JSONResponse
 
+from ...core.errors import DeploymentError, ProcessingError
+
 from .base import GPUType, GenericWebAPI, ModalProviderBase
 from typing import Any, Dict
 from ...core.registry import registry
 from ...core.utils import load_image_robust, is_local_path, local_image_to_base64, create_timestamp, extract_image_dimensions
-from ...core.feature_types import FeatureType
+from ...core.constants import FeatureType
 
 APP_NAME = "test-cogvideox-5b-i2v"
 CACHE_PATH = "/cache"
@@ -105,10 +107,22 @@ class I2V:
             if 'height' not in data and 'width' not in data:
                 data = extract_image_dimensions(image, data)
         except Exception as e:
-            return {"error": f"Error processing images: {str(e)}"}
+            raise ProcessingError(
+                media_type="image",
+                operation="load and process",
+                reason=str(e),
+                file_path=data.get("image") if isinstance(data.get("image"), str) else None
+            )
 
-        i2v_instance = I2V()
-        call = i2v_instance.generate.spawn(data)
+        try:
+            i2v_instance = I2V()
+            call = i2v_instance.generate.spawn(data)
+        except Exception as e:
+            raise DeploymentError(
+                service="Modal",
+                reason=f"Failed to spawn I2V job: {str(e)}",
+                app_name=APP_NAME
+            )
 
         return JSONResponse({"call_id": call.object_id, "feature_type": FeatureType.IMAGE_TO_VIDEO})
 

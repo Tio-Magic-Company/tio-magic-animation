@@ -37,11 +37,20 @@ class Job:
             self.creation_time = create_timestamp()
         if self.last_updated is None:
             self.last_updated = self.creation_time
-
+    
     # Path to the log file for persistent storage
-    cur_dir = os.path.dirname(os.path.abspath(__file__))
-    repo_root = os.path.dirname(os.path.dirname(cur_dir))
-    LOG_PATH = Path(os.path.join(repo_root, 'generation_log.json'))
+    # Find the repository root by looking for pyproject.toml or other root indicators
+    def find_repo_root():
+        current_path = Path(__file__).resolve()
+        while current_path.parent != current_path:  # Stop at filesystem root
+            if (current_path / "pyproject.toml").exists():
+                return current_path
+            current_path = current_path.parent
+        # Fallback: use current working directory if no pyproject.toml found
+        return Path.cwd()
+
+    repo_root = find_repo_root()
+    LOG_PATH = repo_root / 'generation_log.json'
 
     # Ensure the log file exists and is initialized as '{"jobs": []}'
     if not LOG_PATH.exists():

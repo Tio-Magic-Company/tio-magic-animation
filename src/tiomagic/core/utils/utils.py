@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 import base64
 from typing import Any, Dict
+from tiomagic.core.errors import ProcessingError
 
 
 def is_local_path(path: str) -> bool:
@@ -33,7 +34,8 @@ def local_image_to_base64(image_path: str) -> str:
         return f"data:image/png;base64,{base64_str}"
 
     except Exception as e:
-        raise Exception(f"Failed to convert local image {image_path} to base64: {e}")
+        # raise Exception(f"Failed to convert local image {image_path} to base64: {e}")
+        raise ProcessingError(operation = "convert local image to base64", reason=str(e), media_type="image")
 
 def extract_image_dimensions(image, data: Dict[str, Any]) -> Dict[str, Any]:
     """get PIL image dimensions and set them in data"""
@@ -82,11 +84,7 @@ def load_video_robust(video_source):
             raise ValueError(f"Unsupported video source format: {type(video_source)}")
     except Exception as e:
         print(f"Error loading video from {video_source}: {e}")
-        raise
-
-
-
-
+        raise ProcessingError(media_type="video", operation="load video", reason=str(e))
 
 def create_timestamp():
     from datetime import datetime

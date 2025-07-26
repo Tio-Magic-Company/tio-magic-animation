@@ -2,11 +2,13 @@ import modal
 from pathlib import Path
 from fastapi.responses import JSONResponse
 
+from ...core.errors import DeploymentError, ValidationError
+
 from .base import GPUType, GenericWebAPI, ModalProviderBase
 from typing import Any, Dict
 from ...core.registry import registry
 from ...core.utils import create_timestamp
-from ...core.feature_types import FeatureType
+from ...core.constants import FeatureType
 
 # --- Configuration ---
 APP_NAME = "test-cogvideox-5b"
@@ -113,9 +115,20 @@ class T2V:
         """handle text-to-video generation"""
         prompt = data.get("prompt", None)
         if not prompt:
-            return {"error": "A 'prompt' is required."}
-        t2v_instance = T2V()
-        call = t2v_instance.generate.spawn(data)
+            raise ValidationError(
+                field="prompt",
+                message="Arguemt 'prompt' is required for text-to-video generation",
+                value=prompt
+            )
+        try:
+            t2v_instance = T2V()
+            call = t2v_instance.generate.spawn(data)
+        except Exception as e:
+            raise DeploymentError(
+                service="Modal",
+                reason=f"Failed to spawn T2V job: {str(e)}",
+                app_name=APP_NAME
+            )
 
         return JSONResponse({"call_id": call.object_id, "feature_type": FeatureType.TEXT_TO_VIDEO})
 

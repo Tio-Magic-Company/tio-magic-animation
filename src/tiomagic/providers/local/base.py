@@ -1,6 +1,8 @@
 import os
 from typing import Any, Dict
-from ...core.utils.modal_helpers import Generation
+
+from tiomagic.core.errors import ConfigurationError, GenerationError, ValidationError
+from ...core.constants import Generation
 
 
 class LocalProviderBase:
@@ -15,9 +17,9 @@ class LocalProviderBase:
         """Validate that required configuration is set
         """
         if not self.app_name:
-            raise ValueError("Subclass must set 'app_name'")
+            raise ConfigurationError(config_type="app_name", message="subclass must set app_name", missing_field="app_name")
         if not self.feature:
-            raise ValueError("Subclass must set 'feature'")
+            raise ConfigurationError(config_type="feature", message="subclass must set feature", missing_field="feature")
     def _prepare_payload(self, required_args: Dict[str, Any], **kwargs) -> Dict[str, Any]:
         """Prepare the payload for model request.
         
@@ -30,7 +32,11 @@ class LocalProviderBase:
         """
         prompt = required_args.get('prompt', None)
         if required_args is None or prompt is None:
-            raise ValueError("required_args and argument 'prompt' are required")
+            raise ValidationError(
+                field="prompt",
+                message="Arguemt 'prompt' is required generation",
+                value=prompt
+            )
 
         payload = {"prompt": prompt}            
 
@@ -79,5 +85,5 @@ class LocalProviderBase:
         except Exception as e:
             print(f"Error in generate: {str(e)}")
             generation.update(message=f"Error in generate: {str(e)}")
-            raise
+            raise GenerationError(reason=str(e))
 

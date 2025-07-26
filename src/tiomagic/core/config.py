@@ -2,6 +2,9 @@
 Handles provider settings, API keys, and other global confiurations
 """
 
+from tiomagic.core.errors import UnknownProviderError
+
+
 class Configuration:
     def __init__(self):
         self._provider = "modal" #default
@@ -13,8 +16,8 @@ class Configuration:
     def set_provider(self, provider):
         supported_providers = ["modal", "local", "baseten"]
         if provider not in supported_providers:
-            raise ValueError(f"Unsupported provider: {provider}. "
-                            f"Must be one of: {', '.join(supported_providers)}")
+            supported_providers = ', '.join(supported_providers)
+            raise UnknownProviderError(provider=provider, available_providers=supported_providers)
 
         self._provider = provider
 

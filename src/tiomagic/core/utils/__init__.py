@@ -1,2 +1,2 @@
-from .modal_helpers import check_modal_app_deployment, Generation, prepare_video_and_mask, load_image_robust 
+from .modal_helpers import check_modal_app_deployment, prepare_video_and_mask, load_image_robust 
 from .utils import is_local_path, local_image_to_base64, create_timestamp, load_video_robust, extract_image_dimensions

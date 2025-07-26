@@ -7,7 +7,10 @@ import os
 from typing import Any, Dict, Optional
 from enum import Enum
 
-from ...core.utils import check_modal_app_deployment, Generation, create_timestamp
+from tiomagic.core.errors import APIError, ConfigurationError, GenerationError
+
+from ...core.utils import check_modal_app_deployment, create_timestamp
+from ...core.constants import Generation
 from ...core.jobs import JobStatus
 import requests
 
@@ -47,11 +50,11 @@ class ModalProviderBase:
         """Validate that required configuration is set
         """
         if not self.app_name:
-            raise ValueError("Subclass must set app_name")
+            raise ConfigurationError(config_type="app_name", message="subclass must set app_name", missing_field="app_name")
         if not self.modal_app:
-            raise ValueError("Subclass must set modal_app")
+            raise ConfigurationError(config_type="modal_app", message="subclass must set modal_app", missing_field="modal_app")
         if not self.modal_class_name:
-            raise ValueError("Subclass must set modal_class_name")
+            raise ConfigurationError(config_type="modal_class_name", message="subclass must set modal_class_name", missing_field="modal_class_name")
 
     def generate(self, required_args: Dict[str, Any] = None, **kwargs) -> Dict[str, Any]:
         """Generate content using Modal web inference.
@@ -120,9 +123,10 @@ class ModalProviderBase:
 
             return generation.to_dict()
         except Exception as e:
-            print(f"Error in generate: {str(e)}")
             generation.update(message=f"Error in generate: {str(e)}")
-            raise
+            raise GenerationError(app_name=APP_NAME,
+                                  model=MODEL_ID,
+                                  reason=str(e))
 
     def _prepare_payload(self, required_args: Dict[str, Any], **kwargs) -> Dict[str, Any]:
         """Prepare the payload for web inference request.
@@ -195,7 +199,7 @@ class ModalProviderBase:
         except requests.RequestException as e:
             print("request error")
             generation.update(message=f"Request error: {str(e)}")
-            return None
+            raise APIError(response_body=str(e))
 
     def check_generation_status(self, generation: Generation) -> Generation:
         """Check the status of a previous generate call.
@@ -236,6 +240,7 @@ class ModalProviderBase:
         except Exception as e:
             print("EXCEPTION IN MODAL CHECK GEN STATUS", e)
             self._handle_generation_error(e, generation)
+            raise GenerationError(reason=str(e))
 
         return generation
 
@@ -253,6 +258,7 @@ class ModalProviderBase:
         except Exception as e:
             print("EXCEPTION IN MODAL CANCEL JOB", e)
             self._handle_generation_error(e, generation)
+            raise GenerationError(reason=str(e))
         return generation
 
     def _save_video_file(self, video_bytes: bytes, call_id: str) -> str:
