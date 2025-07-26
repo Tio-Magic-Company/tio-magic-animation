@@ -3,12 +3,14 @@ from fastapi.responses import JSONResponse
 import os
 from typing import Any, Dict
 
+from tiomagic.core.errors import GenerationError
+
 from ...core.registry import registry
 from ...core.utils import is_local_path
-from ...core.utils.modal_helpers import Generation
+from ...core.constants import Generation
 from .base import LocalProviderBase
 import base64
-from ...core.feature_types import FeatureType
+from ...core.constants import FeatureType
 
 
 from google import genai
@@ -41,7 +43,10 @@ class I2V:
             return JSONResponse({"call_id": operation.name, "feature_type": FeatureType.IMAGE_TO_VIDEO})
         except Exception as e:
             print(f"Error generating video: {str(e)}")
-            return JSONResponse({"error": f"Error generating video: {str(e)}"})
+            raise GenerationError(app_name=APP_NAME, 
+                                  model=MODEL_NAME,
+                                  reason=str(e)
+                                  )
 
 
 class Veo20Generate001(LocalProviderBase):
@@ -210,7 +215,11 @@ class Veo20Generate001(LocalProviderBase):
         except Exception as e:
             print(f"Error in generate: {str(e)}")
             generation.update(message=f"Error in generate: {str(e)}")
-            raise
+
+            raise GenerationError(app_name=APP_NAME, 
+                                  model=MODEL_NAME,
+                                  reason=str(e)
+                                  )
     # def check_generation_status(self, generation: Generation) -> Generation:
     #     """Check the status of a previous generate call.
 

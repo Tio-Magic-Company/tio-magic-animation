@@ -6,7 +6,10 @@ from .base import GPUType, GenericWebAPI, ModalProviderBase
 from typing import Any, Dict
 from ...core.registry import registry
 from ...core.utils import load_image_robust, is_local_path, local_image_to_base64, create_timestamp, extract_image_dimensions
-from ...core.feature_types import FeatureType
+from ...core.constants import FeatureType
+from ...core.errors import (
+    DeploymentError, ValidationError, ProcessingError
+)
 
 APP_NAME = "test-framepack-i2v-hy"
 CACHE_NAME = f"{APP_NAME}-cache"
@@ -103,9 +106,18 @@ class I2V:
         image = data.get("image")
 
         if not prompt:
-            return {"error": "A 'prompt' is required."}
+            raise ValidationError(
+                field="prompt",
+                message="Arguemt 'prompt' is required for image-to-video generation",
+                value=prompt
+            )
+        
         if not image:
-            return {"error": "An 'image' is required."}
+            raise ValidationError(
+                field="image", 
+                message="Argument 'image' is required for image-to-video generation",
+                value=image
+            )
 
         try:
             image = load_image_robust(image)
@@ -113,11 +125,23 @@ class I2V:
             if 'height' not in data and 'width' not in data:
                 data = extract_image_dimensions(image, data)
         except Exception as e:
-            return {"error": f"Error processing images: {str(e)}"}
+            raise ProcessingError(
+                media_type="image",
+                operation="load and process",
+                reason=str(e),
+                file_path=data.get("image") if isinstance(data.get("image"), str) else None
+            )
 
         # Create I2V instance and call generate
-        i2v_instance = I2V()
-        call = i2v_instance.generate.spawn(data)
+        try:
+            i2v_instance = I2V()
+            call = i2v_instance.generate.spawn(data)
+        except Exception as e:
+            raise DeploymentError(
+                service="Modal",
+                reason=f"Failed to spawn I2V job: {str(e)}",
+                app_name=APP_NAME
+            )
 
         return JSONResponse({"call_id": call.object_id, "feature_type": FeatureType.IMAGE_TO_VIDEO})
 class FramepackI2VHYImageToVideo(ModalProviderBase):
@@ -200,9 +224,23 @@ class Interpolate:
         last_frame = data.get("last_frame")
 
         if not prompt:
-            return {"error": "A 'prompt' is required."}
-        if not first_frame or not last_frame:
-            return {"error": "Both 'first_frame' and 'last_frame' are required."}
+            raise ValidationError(
+                field="prompt",
+                message="Arguemt 'prompt' is required for interpolate generation",
+                value=prompt
+            )
+        if not first_frame:
+            raise ValidationError(
+                field="first_frame", 
+                message="Argument 'first_frame' is required for interpolate generation",
+                value=image
+            )
+        if not last_frame:
+            raise ValidationError(
+                field="last_frame", 
+                message="Argument 'last_frame' is required for interpolate generation",
+                value=image
+            )
 
         try:
             # load_image_robust can handle both URLs and base64 strings
@@ -213,10 +251,22 @@ class Interpolate:
             if 'height' not in data and 'width' not in data:
                 data = extract_image_dimensions(first_frame, data)     
         except Exception as e:
-            return {"error": f"Error processing images: {str(e)}"}
+            raise ProcessingError(
+                media_type="image",
+                operation="load and process",
+                reason=str(e),
+                file_path=data.get("image") if isinstance(data.get("image"), str) else None
+            )
 
-        interpolate_instance = Interpolate()
-        call = interpolate_instance.generate.spawn(data)
+        try:
+            interpolate_instance = Interpolate()
+            call = interpolate_instance.generate.spawn(data)
+        except Exception as e:
+            raise DeploymentError(
+                service="Modal",
+                reason=f"Failed to spawn Interpolate job: {str(e)}",
+                app_name=APP_NAME
+            )
 
         return JSONResponse({"call_id": call.object_id, "feature_type": FeatureType.INTERPOLATE})
 class FramepackI2VHYInterpolate(ModalProviderBase):

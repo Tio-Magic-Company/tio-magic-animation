@@ -2,7 +2,8 @@
 Defines all supported video generation features
 """
 from enum import Enum
-from typing import List
+from typing import List, Optional
+from dataclasses import dataclass, asdict
 
 class FeatureType(str, Enum):
     """Standardized feature types for video generation"""
@@ -26,3 +27,22 @@ def is_valid_feature_type(feature_type: str) -> bool:
 def get_feature_types() -> List[str]:
     """Get list of all supported feature types"""
     return SUPPORTED_FEATURE_TYPES.copy()
+
+"""MODAL VIDEO GENERATION TRACKING"""
+@dataclass
+class Generation:
+    call_id: Optional[str] = None
+    status: Optional[str] = None
+    message: str = ''
+    timestamp: Optional[str] = None
+    required_args: Optional[dict] = None
+    optional_args: Optional[dict] = None
+    result_video: Optional[str] = None
+
+    def to_dict(self):
+        return asdict(self)
+
+    def update(self, **kwargs):
+        for key, value in kwargs.items():
+            if hasattr(self, key):
+                setattr(self, key, value)

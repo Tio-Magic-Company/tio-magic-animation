@@ -6,8 +6,12 @@ from .base import GPUType, GenericWebAPI, ModalProviderBase
 from typing import Any, Dict
 from ...core.registry import registry
 from ...core.utils import prepare_video_and_mask, load_image_robust, is_local_path, local_image_to_base64, create_timestamp, load_video_robust, extract_image_dimensions
-from ...core.feature_types import FeatureType
+from ...core.constants import FeatureType
 from ...core.schemas import FEATURE_SCHEMAS
+from ...core.errors import (
+    DeploymentError, ValidationError, ProcessingError
+)
+
 
 # --- Configuration ---
 APP_NAME = "test-wan-2.1-vace-t2v-14b"
@@ -121,8 +125,15 @@ class T2V:
 
         print("handle web inference data: ", data)
         # Create T2V instance and call generate
-        t2v_instance = T2VAppClass()
-        call = t2v_instance.generate.spawn(data)
+        try:
+            t2v_instance = T2VAppClass()
+            call = t2v_instance.generate.spawn(data)
+        except Exception as e:
+            raise DeploymentError(
+                servie="modal",
+                reason=f"Failed to spawn T2V job: {str(e)}",
+                app_name=APP_NAME
+            )
 
         return JSONResponse({"call_id": call.object_id, "feature_type": FeatureType.TEXT_TO_VIDEO})
 T2VAppClass = app_class_factory(T2V)
@@ -206,11 +217,19 @@ class I2V:
 
         prompt = data.get("prompt")
         image = data.get("image")
-
         if not prompt:
-            return {"error": "A 'prompt' is required."}
+            raise ValidationError(
+                field="prompt",
+                message="Arguemt 'prompt' is required for image-to-video generation",
+                value=prompt
+            )
+        
         if not image:
-            return {"error": "An 'image' is required."}
+            raise ValidationError(
+                field="image", 
+                message="Argument 'image' is required for image-to-video generation",
+                value=image
+            )
 
         # print(f"image_to_video - prompt: {prompt}")
         # print(f"image_to_video - image: {image}")
@@ -222,11 +241,23 @@ class I2V:
             if 'height' not in data and 'width' not in data:
                 data = extract_image_dimensions(image, data)
         except Exception as e:
-            return {"error": f"Error processing images: {str(e)}"}
+            raise ProcessingError(
+                media_type="image",
+                operation="load and process",
+                reason=str(e),
+                file_path=data.get("image") if isinstance(data.get("image"), str) else None
+            )
 
         # Create I2V instance and call generate
-        i2v_instance = I2VAppClass()
-        call = i2v_instance.generate.spawn(data)
+        try:
+            i2v_instance = I2VAppClass()
+            call = i2v_instance.generate.spawn(data)
+        except Exception as e:
+            raise DeploymentError(
+                service="Modal",
+                reason=f"Failed to spawn I2V job: {str(e)}",
+                app_name=APP_NAME
+            )
 
         return JSONResponse({"call_id": call.object_id, "feature_type": FeatureType.IMAGE_TO_VIDEO})
 I2VAppClass = app_class_factory(I2V)
@@ -305,9 +336,18 @@ class Interpolate:
         last_frame = data.get("last_frame")
 
         if not prompt:
-            return {"error": "A 'prompt' is required."}
-        if not first_frame or not last_frame:
-            return {"error": "Both 'first_frame' and 'last_frame' are required."}
+            raise ValidationError(
+                field="prompt",
+                message="Arguemt 'prompt' is required for image-to-video generation",
+                value=prompt
+            )
+        
+        if not image:
+            raise ValidationError(
+                field="image", 
+                message="Argument 'image' is required for image-to-video generation",
+                value=image
+            )
 
         try:
             # load_image_robust can handle both URLs and base64 strings, return PIL.Image
@@ -318,11 +358,23 @@ class Interpolate:
             if 'height' not in data and 'width' not in data:
                 data = extract_image_dimensions(first_frame, data)
         except Exception as e:
-            return {"error": f"Error processing images: {str(e)}"}
+            raise ProcessingError(
+                media_type="image",
+                operation="load and process",
+                reason=str(e),
+                file_path=data.get('image') if isinstance(data.get("image"), str) else None
+            )
 
         # Create Interpolate instance and call generate
-        interpolate_instance = InterpolateAppClass()
-        call = interpolate_instance.generate.spawn(data)
+        try:
+            interpolate_instance = InterpolateAppClass()
+            call = interpolate_instance.generate.spawn(data)
+        except Exception as e:
+            raise DeploymentError(
+                servie="modal",
+                reason=f"Failed to spawn Interpolate job: {str(e)}",
+                app_name=APP_NAME
+            )
 
         return JSONResponse({"call_id": call.object_id, "feature_type": FeatureType.INTERPOLATE})
 InterpolateAppClass = app_class_factory(Interpolate)
@@ -446,7 +498,12 @@ class PoseGuidance:
             if 'height' not in data and 'width' not in data:
                 data = extract_image_dimensions(image, data)
         except Exception as e:
-            return {"error": f"Error processing images: {str(e)}"}
+            raise ProcessingError(
+                media_type="image",
+                operation="load and process",
+                reason=str(e),
+                file_path=data.get("image") if isinstance(data.get("image"), str) else None
+            )
 
         try:
             video_fields = ['guiding_video', 'pose_video']
@@ -456,10 +513,21 @@ class PoseGuidance:
                     video = load_video_robust(data[field])
                     data[field] = video
         except Exception as e:
-            return{"error": f"Error processing base64 video: {str(e)}"}
+            raise ProcessingError(
+                media_type="video",
+                operation="load and process",
+                reason=str(e),
+            )
 
-        pose_guidance_instance = PoseGuidanceAppClass()
-        call = pose_guidance_instance.generate.spawn(data)
+        try:
+            pose_guidance_instance = PoseGuidanceAppClass()
+            call = pose_guidance_instance.generate.spawn(data)
+        except Exception as e:
+            raise DeploymentError(
+                servie="modal",
+                reason=f"Failed to spawn Pose Guidance job: {str(e)}",
+                app_name=APP_NAME
+            )
 
         return JSONResponse({"call_id": call.object_id, "feature_type": FeatureType.POSE_GUIDANCE})
 PoseGuidanceAppClass = app_class_factory(PoseGuidance)
