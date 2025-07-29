@@ -2,7 +2,6 @@ from typing import Any, Dict
 from fastapi.responses import JSONResponse
 import modal
 from pathlib import Path
-import os
 from PIL import Image
 
 from tiomagic.core.utils.modal_helpers import load_image_robust
