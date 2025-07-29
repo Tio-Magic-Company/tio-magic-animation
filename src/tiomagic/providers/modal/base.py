@@ -274,9 +274,9 @@ class ModalProviderBase:
         timestamp = create_timestamp()
         video_filename = f"{call_id}_{timestamp}.mp4"
 
-        # Get the directory of this file and save to the same directory
+        # Get the directory of this file and navigate to repo root
         current_dir = os.path.dirname(os.path.abspath(__file__))
-        repo_root = os.path.dirname(os.path.dirname(os.path.dirname(current_dir)))
+        repo_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(current_dir))))
         output_videos_dir = os.path.join(repo_root, "output_videos")
         # Ensure the output_videos directory exists
         os.makedirs(output_videos_dir, exist_ok=True)

@@ -8,6 +8,7 @@ try:
     from .cogvideox_5b_i2v import CogVideoX5BImageToVideo
     from .framepack_i2v_hy import FramepackI2VHYImageToVideo, FramepackI2VHYInterpolate
     from .ltx_video import LTXVideoImageToVideo
+    from .pusav1 import PusaV1TextToVideo, PusaV1ImageToVideo
 except ImportError as e:
     import warnings
     warnings.warn(f"Could not import Model: {e}")
@@ -26,4 +27,6 @@ __all__ = [
     "Wan21VaceInterpolate14B",
     "Wan21VacePoseGuidance14B",
     "Wan21VaceTextToVideo14B",
+    "PusaV1TextToVideo",
+    "PusaV1ImageToVideo",
 ]

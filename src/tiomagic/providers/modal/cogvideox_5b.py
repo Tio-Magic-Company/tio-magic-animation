@@ -149,7 +149,7 @@ class CogVideoXTextToVideo5B(ModalProviderBase):
         return payload
 
 # Create a subclass with the handlers
-class WebAPIClass(GenericWebAPI):
+class WebAPI(GenericWebAPI):
     feature_handlers = {
         FeatureType.TEXT_TO_VIDEO: T2V,
     }
@@ -162,7 +162,7 @@ WebAPI = app.cls(
     volumes={CACHE_PATH: cache_volume, OUTPUTS_PATH: outputs_volume},
     timeout=TIMEOUT,
     scaledown_window=SCALEDOWN_WINDOW,
-)(WebAPIClass)
+)(WebAPI)
 
 registry.register(
     feature=FeatureType.TEXT_TO_VIDEO,

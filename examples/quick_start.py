@@ -12,7 +12,8 @@ def text_to_video_example():
     optional_args = {
         "negative_prompt": "blurry, low quality",
     }
-    tm.text_to_video(model="wan2.1-vace-14b", required_args=required_args, **optional_args)
+    tm.text_to_video(model="pusa-v1", required_args=required_args, **optional_args)
+    # tm.text_to_video(model="wan2.1-vace-14b", required_args=required_args, **optional_args)
     # tm.text_to_video(model="cogvideox-5b", required_args=required_args, **optional_args)
 
 def image_to_video_example():
@@ -35,9 +36,10 @@ def image_to_video_example():
         "negative_prompt": "blurry, low quality, getty",
     }
 
+    tm.image_to_video(model="pusa-v1", required_args=required_args, **optional_args)
     # tm.image_to_video(model="framepack-i2v-hy", required_args=required_args, **optional_args)
     # tm.image_to_video(model="cogvideox-5b-image-to-video", required_args=required_args, **optional_args)
-    tm.image_to_video(model="wan2.1-vace-14b", required_args=required_args, **optional_args)
+    # tm.image_to_video(model="wan2.1-vace-14b", required_args=required_args, **optional_args)
     # tm.image_to_video(model="wan2.1-i2v-14b-720p", required_args=required_args, **optional_args)
     # tm.image_to_video(model="veo-2.0-generate-001", required_args=required_args, **optional_args)
 
@@ -63,6 +65,7 @@ def interpolate_example():
     # tm.interpolate(model="framepack-i2v-hy", required_args=required_args, **optional_args)
     tm.interpolate(model="wan2.1-vace-14b", required_args=required_args, **optional_args)
     # tm.interpolate(model="wan2.1-flf2v-14b-720p", required_args=required_args, **optional_args)
+    
 
 def pose_guidance_example():
     tm.configure(provider="modal")
@@ -98,14 +101,14 @@ if __name__ == "__main__":
     load_dotenv()
     # check for keys in appropriate provider files
 
-    status = "b8dbbfde-15b9-4788-ad0d-f1d60563f2d0"
+    status = "6c52c850-288c-4c72-baf1-77565c4ad455"
 
     # text_to_video_example()
     # image_to_video_example()
     # interpolate_example()
     # pose_guidance_example()
 
-    # check_status(status)
-    cancel_job(status)
+    check_status(status)
+    # cancel_job(status)
 
 
