@@ -338,14 +338,20 @@ class Interpolate:
         if not prompt:
             raise ValidationError(
                 field="prompt",
-                message="Arguemt 'prompt' is required for image-to-video generation",
+                message="Arguemt 'prompt' is required for interpolate generation",
                 value=prompt
             )
         
-        if not image:
+        if not first_frame:
             raise ValidationError(
                 field="image", 
-                message="Argument 'image' is required for image-to-video generation",
+                message="Argument 'first_frame' is required for interpolate generation",
+                value=image
+            )
+        if not last_frame:
+            raise ValidationError(
+                field="image", 
+                message="Argument 'last_frame' is required for interpolate generation",
                 value=image
             )
 

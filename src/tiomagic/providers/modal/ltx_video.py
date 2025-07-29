@@ -142,7 +142,7 @@ class WebAPI(GenericWebAPI):
         FeatureType.IMAGE_TO_VIDEO: I2V,
     }
 # Apply Modal decorator
-WebAPIClass = app.cls(
+WebAPI = app.cls(
     image=image,
     gpu=GPU_CONFIG,
     secrets=[modal.Secret.from_name("huggingface-secret")],

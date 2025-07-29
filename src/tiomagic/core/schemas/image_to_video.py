@@ -165,6 +165,20 @@ SCHEMAS = {
 
             # "SEED_NUMBER": {"type": int, "description": "A number from 0 to 4,294,967,295 to make video generation deterministic."}
         }
+    },
+    "pusa-v1": {
+        "required": {
+            "prompt": {"type": str, "description": "Text prompt to guide generation"},
+            "image": {"type": str, "description": "Path or URL to input image"}
+        },
+        "optional": {
+            "negative_prompt": {"type": str, "description": "The prompt or prompts not to guide video generation. Ignored if guidance_scale is less than 1."},
+            "cond_position": {"type": str, "default": "0", "description": "Comma-separated list of frame indices for conditioning. You can use any position from 0 to 20."},
+            "noise_multipliers": {"type": str, "default": "0.0", "description": "Comma-separated noise multipliers for conditioning frames. A value of 0 means the condition image is used as totally clean, higher value means add more noise. For I2V, you can use 0.2 or any from 0 to 1. For Start-End-Frame, you can use 0.2,0.4, or any from 0 to 1."},
+            "lora_alpha": {"type": float, "default": 1.0, "description": "A bigger alpha would bring more temporal consistency (i.e., make generated frames more like conditioning part), but may also cause small motion or even collapse. We recommend using a value around 1 to 2."},
+            "num_inference_steps": {"type": int, "default": 30},
+            "num_frames": {"type": int, "default": 81},
+        }
     }
 
     # Add more models as needed

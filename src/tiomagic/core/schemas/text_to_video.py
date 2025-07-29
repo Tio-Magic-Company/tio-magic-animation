@@ -76,6 +76,14 @@ SCHEMAS = {
             "callback_on_step_end_tensor_inputs": {"type": list, "description": "The list of tensor inputs for the callback_on_step_end function."},
             "max_sequence_length": {"type": int, "default": 226, "description": "Maximum sequence length in the encoded prompt."}
         }
+    },
+    "pusa-v1": {
+        "required": {
+            "prompt": {"type": str, "description": "Text prompt to guide generation"},
+        },
+        "optional": {
+            "negative_prompt": {"type": str, "description": "The prompt or prompts not to guide video generation. Ignored if guidance_scale is less than 1."},
+        }
     }
     # Add more models as needed
 }
