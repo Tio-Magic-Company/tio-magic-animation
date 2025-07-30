@@ -1,3 +1,4 @@
+from fastapi import Body
 import modal
 from pathlib import Path
 from fastapi.responses import JSONResponse
@@ -49,7 +50,8 @@ image = (
         "opencv-python-headless",
         "safetensors",
         "fastapi",
-        "python-dotenv"
+        "python-dotenv",
+        "peft"
     ).run_commands("pip install easy-dwpose --no-deps")
     .env({"HF_HUB_CACHE": CACHE_PATH, "TOKENIZERS_PARALLELISM": "false"})
 )
@@ -92,9 +94,15 @@ class T2V:
         self.vae = AutoencoderKLWan.from_pretrained(VACE_MODEL_ID, subfolder="vae", torch_dtype=torch.float32)
         self.pipe = WanVACEPipeline.from_pretrained(VACE_MODEL_ID, vae=self.vae, torch_dtype=torch.bfloat16)
 
+        # Completely remove any LoRA to ensure clean base model
+        if hasattr(self.pipe, 'unload_lora_weights'):
+            print("unloading lora weights")
+            self.pipe.unload_lora_weights()
+        
         flow_shift = 3.0
         self.pipe.scheduler = FlowMatchEulerDiscreteScheduler.from_config(self.pipe.scheduler.config, flow_shift=flow_shift)
         self.pipe.to("cuda")
+        self.pipe.enable_model_cpu_offload()
 
         print("✅ Models loaded successfully.")
     @modal.method()
@@ -130,7 +138,7 @@ class T2V:
             call = t2v_instance.generate.spawn(data)
         except Exception as e:
             raise DeploymentError(
-                servie="modal",
+                service="modal",
                 reason=f"Failed to spawn T2V job: {str(e)}",
                 app_name=APP_NAME
             )
@@ -165,9 +173,15 @@ class I2V:
         self.vae = AutoencoderKLWan.from_pretrained(VACE_MODEL_ID, subfolder="vae", torch_dtype=torch.float32)
         self.pipe = WanVACEPipeline.from_pretrained(VACE_MODEL_ID, vae=self.vae, torch_dtype=torch.bfloat16)
 
+        # Completely remove any LoRA to ensure clean base model
+        if hasattr(self.pipe, 'unload_lora_weights'):
+            print("unloading lora weights")
+            self.pipe.unload_lora_weights()
+
         flow_shift = 5.0
         self.pipe.scheduler = UniPCMultistepScheduler.from_config(self.pipe.scheduler.config, flow_shift=flow_shift)
         self.pipe.to("cuda")
+        self.pipe.enable_model_cpu_offload()
 
         print("✅ Models loaded successfully.")
     @modal.method()
@@ -286,13 +300,25 @@ class Interpolate:
         from diffusers import AutoencoderKLWan, WanVACEPipeline
         from diffusers.schedulers.scheduling_unipc_multistep import UniPCMultistepScheduler
 
+        # Force GPU memory cleanup first
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+            torch.cuda.synchronize()
+            print(f"GPU memory before loading: {torch.cuda.memory_allocated() / 1024**3:.2f} GB")
+
         print("Loading models into GPU memory...")
         self.vae = AutoencoderKLWan.from_pretrained(VACE_MODEL_ID, subfolder="vae", torch_dtype=torch.float32)
         self.pipe = WanVACEPipeline.from_pretrained(VACE_MODEL_ID, vae=self.vae, torch_dtype=torch.bfloat16)
 
+        # Completely remove any LoRA to ensure clean base model
+        if hasattr(self.pipe, 'unload_lora_weights'):
+            print("unloading lora weights")
+            self.pipe.unload_lora_weights()
+
         flow_shift = 5.0
         self.pipe.scheduler = UniPCMultistepScheduler.from_config(self.pipe.scheduler.config, flow_shift=flow_shift)
         self.pipe.to("cuda")
+        self.pipe.enable_model_cpu_offload()
 
         print("✅ Models loaded successfully.")
     @modal.method()
@@ -377,7 +403,7 @@ class Interpolate:
             call = interpolate_instance.generate.spawn(data)
         except Exception as e:
             raise DeploymentError(
-                servie="modal",
+                service="modal",
                 reason=f"Failed to spawn Interpolate job: {str(e)}",
                 app_name=APP_NAME
             )
@@ -422,6 +448,11 @@ class PoseGuidance:
         print("Loading models into GPU memory...")
         self.vae = AutoencoderKLWan.from_pretrained(VACE_MODEL_ID, subfolder="vae", torch_dtype=torch.float32)
         self.pipe = WanVACEPipeline.from_pretrained(VACE_MODEL_ID, vae=self.vae, torch_dtype=torch.bfloat16)
+
+        # Completely remove any LoRA to ensure clean base model
+        if hasattr(self.pipe, 'unload_lora_weights'):
+            print("unloading lora weights")
+            self.pipe.unload_lora_weights()
 
         flow_shift = 3.0
         self.pipe.scheduler = FlowMatchEulerDiscreteScheduler.from_config(self.pipe.scheduler.config, flow_shift=flow_shift)
@@ -530,7 +561,7 @@ class PoseGuidance:
             call = pose_guidance_instance.generate.spawn(data)
         except Exception as e:
             raise DeploymentError(
-                servie="modal",
+                service="modal",
                 reason=f"Failed to spawn Pose Guidance job: {str(e)}",
                 app_name=APP_NAME
             )
@@ -566,6 +597,219 @@ class Wan21VacePoseGuidance14B(ModalProviderBase):
 
         return payload
 
+class PhantomFusionXT2V:
+    @modal.enter()
+    def load_models(self):
+        import torch
+        from diffusers import AutoencoderKLWan, WanVACEPipeline
+        from diffusers.schedulers import FlowMatchEulerDiscreteScheduler
+
+        print("Loading models into GPU memory...")
+        self.vae = AutoencoderKLWan.from_pretrained(
+            VACE_MODEL_ID, 
+            subfolder="vae", 
+            torch_dtype=torch.float32)
+        self.pipe = WanVACEPipeline.from_pretrained(
+            VACE_MODEL_ID, 
+            vae=self.vae, 
+            torch_dtype=torch.bfloat16)
+
+        self.pipe.load_lora_weights(
+            "vrgamedevgirl84/Wan14BT2VFusioniX", 
+            weight_name="FusionX_LoRa/Phantom_Wan_14B_FusionX_LoRA.safetensors", 
+            adapter_name="phantom"
+        )
+        self.pipe.enable_lora()
+        
+        flow_shift = 3.0
+        self.pipe.scheduler = FlowMatchEulerDiscreteScheduler.from_config(self.pipe.scheduler.config, flow_shift=flow_shift)
+        self.pipe.to("cuda")
+        self.pipe.enable_model_cpu_offload()
+
+        print("✅ Models loaded successfully.")
+    @modal.method()
+    def generate(self, data: Dict[str, Any]):
+        from diffusers.utils import export_to_video
+        # for every value in data, pass into pipe
+        frames = self.pipe(**data).frames[0]
+
+        timestamp = create_timestamp()
+        mp4_name = f"{MODEL_NAME}-phantom-fusionx-t2v-output_{timestamp}.mp4"
+        mp4_path = Path(OUTPUTS_PATH) / mp4_name
+        export_to_video(frames, str(mp4_path), fps=16)
+        outputs_volume.commit()
+
+        with open(mp4_path, "rb") as f:
+            video_bytes = f.read()
+
+        return video_bytes 
+    @staticmethod
+    def handle_web_inference(data: dict):
+        """Handle text-to-video generation."""
+        prompt = data.get("prompt")
+
+        if not prompt:
+            return {"error": "A 'prompt' is required."}
+
+        print(f"text_to_video - prompt: {prompt}")
+
+        print("handle web inference data: ", data)
+        # Create T2V instance and call generate
+        try:
+            t2v_instance = PhantomFusionXT2VAppClass()
+            call = t2v_instance.generate.spawn(data)
+        except Exception as e:
+            raise DeploymentError(
+                service="modal",
+                reason=f"Failed to spawn FusionX T2V job: {str(e)}",
+                app_name=APP_NAME
+            )
+
+        return JSONResponse({"call_id": call.object_id, "feature_type": FeatureType.TEXT_TO_VIDEO})
+PhantomFusionXT2VAppClass = app_class_factory(PhantomFusionXT2V)
+class Wan21VaceTextToVideo14BPhantomFusionX(ModalProviderBase):
+    def __init__(self, api_key=None):
+        super().__init__(api_key)
+        self.app_name = APP_NAME
+        self.modal_app = app
+        self.modal_class_name = "PhantomFusionXT2V"
+    def _prepare_payload(self, required_args, **kwargs) -> Dict[str, Any]:
+        """Prepare payload specific to Wan2.1 Vace Fusion Xmodel."""
+        payload = super()._prepare_payload(required_args, **kwargs)
+
+        # Add feature_type for routing
+        payload["feature_type"] = FeatureType.TEXT_TO_VIDEO
+        payload["model"] = "wan2.1-vace-14b-phantom-fusionx"
+
+        # print("payload: ", payload)
+        return payload
+
+
+class FusionXI2V:
+    @modal.enter()
+    def load_models(self):
+        import torch
+        from diffusers import AutoencoderKLWan, WanVACEPipeline
+        from diffusers.schedulers.scheduling_unipc_multistep import UniPCMultistepScheduler
+
+        print("Loading models into GPU memory...")
+        self.vae = AutoencoderKLWan.from_pretrained(VACE_MODEL_ID, subfolder="vae", torch_dtype=torch.float32)
+        self.pipe = WanVACEPipeline.from_pretrained(VACE_MODEL_ID, vae=self.vae, torch_dtype=torch.bfloat16)
+        flow_shift = 5.0
+        self.pipe.scheduler = UniPCMultistepScheduler.from_config(self.pipe.scheduler.config, flow_shift=flow_shift)
+
+        # Load I2V FusionX
+        self.pipe.load_lora_weights("vrgamedevgirl84/Wan14BT2VFusioniX", weight_name="FusionX_LoRa/Wan2.1_I2V_14B_FusionX_LoRA.safetensors", adapter_names=["I2V FusionX"])
+        self.pipe.enable_lora()
+
+        self.pipe.to("cuda")
+        self.pipe.enable_model_cpu_offload()
+
+        print("✅ Models loaded successfully.")
+    @modal.method()
+    def generate(self, data: Dict[str, Any]):
+        import torch
+        from diffusers.utils import export_to_video
+        print("***MODAL GENERATE METHOD***")
+        print("Starting video generation process...")
+
+        i2v_schema = FEATURE_SCHEMAS["image_to_video"]["wan2.1-vace-14b-i2v-fusionx"]
+
+        # Define video parameters
+        height = data.get('height', i2v_schema["optional"]["height"]["default"])
+        width = data.get('width', i2v_schema["optional"]["width"]["default"])
+        print('width and height in generate, ', width, height)
+        num_frames = data.get('num_frames', i2v_schema["optional"]["num_frames"]["default"])
+
+        # Prepare the data for the pipeline
+        video, mask = prepare_video_and_mask(data.get('image'), height, width, num_frames)
+        data.pop('image')
+        print('data run in the pipeline: ', data)
+
+        # Run the diffusion pipeline
+        output_frames = self.pipe(
+            video=video,
+            mask=mask,
+            **data,
+            generator=torch.Generator("cuda").manual_seed(42),
+        ).frames[0]
+        print("Pipeline execution finished.")
+
+        timestamp = create_timestamp()
+        mp4_name = f"{MODEL_NAME}-wan2.1-vace-14b-i2v-fusionx-output_{timestamp}.mp4"
+        mp4_path = Path(OUTPUTS_PATH) / mp4_name
+        export_to_video(output_frames, str(mp4_path), fps=16)
+        outputs_volume.commit()
+
+        with open(mp4_path, "rb") as f:
+            video_bytes = f.read()
+
+        return video_bytes
+    @staticmethod
+    def handle_web_inference(data: dict):
+        """Handle image-to-video generation."""
+        prompt = data.get("prompt")
+        image = data.get("image")
+        if not prompt:
+            raise ValidationError(
+                field="prompt",
+                message="Arguemt 'prompt' is required for image-to-video generation",
+                value=prompt
+            )
+        
+        if not image:
+            raise ValidationError(
+                field="image", 
+                message="Argument 'image' is required for image-to-video generation",
+                value=image
+            )
+
+        try:
+            image = load_image_robust(image)
+            data['image'] = image
+            if 'height' not in data and 'width' not in data:
+                data = extract_image_dimensions(image, data)
+        except Exception as e:
+            raise ProcessingError(
+                media_type="image",
+                operation="load and process",
+                reason=str(e),
+                file_path=data.get("image") if isinstance(data.get("image"), str) else None
+            )
+
+        # Create I2V instance and call generate
+        try:
+            i2v_instance = FusionXI2VAppClass()
+            call = i2v_instance.generate.spawn(data)
+        except Exception as e:
+            raise DeploymentError(
+                service="Modal",
+                reason=f"Failed to spawn FusionX I2V job: {str(e)}",
+                app_name=APP_NAME
+            )
+
+        return JSONResponse({"call_id": call.object_id, "feature_type": FeatureType.IMAGE_TO_VIDEO})
+FusionXI2VAppClass = app_class_factory(FusionXI2V)
+
+class Wan21VaceImageToVideo14BFusionX(ModalProviderBase):
+    def __init__(self, api_key=None):
+        super().__init__(api_key)
+        self.app_name = APP_NAME
+        self.modal_app = app
+        self.modal_class_name = "I2V"
+    def _prepare_payload(self, required_args: Dict[str, Any], **kwargs) -> Dict[str, Any]:
+        """Prepare payload specific to Wan2.1 Vace Image-to-Video FusionX model."""
+        print("***CHILD PREPARE PAYLOAD***")
+
+        payload = super()._prepare_payload(required_args, **kwargs)
+        payload["feature_type"] = "image_to_video"
+        payload["model"] = "wan2.1-vace-14b-i2v-fusionx"
+
+        if is_local_path(payload['image']):
+            payload['image'] = local_image_to_base64(payload['image'])
+        return payload
+    
+
 # Create a subclass with the handlers
 class WebAPI(GenericWebAPI):
     feature_handlers = {
@@ -574,6 +818,27 @@ class WebAPI(GenericWebAPI):
         FeatureType.INTERPOLATE: Interpolate,
         FeatureType.POSE_GUIDANCE: PoseGuidance,
     }
+    @modal.fastapi_endpoint(method="POST")
+    def web_inference(self, data: dict = Body(...)):
+        feature_type = data.pop("feature_type", None)
+        model = data.pop("model", None)  # Extract model from data
+        if not feature_type:
+            return {"error": f"A 'feature_type' is required. Must be one of: {list(self.feature_handlers.keys())}"}
+
+        if feature_type not in self.feature_handlers:
+            return {"error": f"Unknown feature_type: {feature_type}. Must be one of: {list(self.feature_handlers.keys())}"}
+
+        # Route to appropriate class based on model and feature_type
+        if feature_type == FeatureType.TEXT_TO_VIDEO and model == "wan2.1-vace-14b-phantom-fusionx":
+            # Route to FusionXT2V for the fusionx model
+            return PhantomFusionXT2V.handle_web_inference(data)
+        if feature_type == FeatureType.IMAGE_TO_VIDEO and model == "wan2.1-vace-14b-i2v-fusionx":
+            return FusionXI2V.handle_web_inference(data)
+        else:
+            # Route to default handler
+            handler_class = self.feature_handlers[feature_type]
+            return handler_class.handle_web_inference(data)
+
 # Apply Modal decorator
 WebAPIClass = app_class_factory(WebAPI)
 
@@ -603,5 +868,15 @@ registry.register(
     provider="modal",
     implementation=Wan21VacePoseGuidance14B,
 )
-
-
+registry.register(
+    feature=FeatureType.TEXT_TO_VIDEO,
+    model="wan2.1-vace-14b-phantom-fusionx",
+    provider="modal",
+    implementation=Wan21VaceTextToVideo14BPhantomFusionX
+)
+registry.register(
+    feature=FeatureType.IMAGE_TO_VIDEO,
+    model="wan2.1-vace-14b-i2v-fusionx",
+    provider="modal",
+    implementation=Wan21VaceImageToVideo14BFusionX
+)
