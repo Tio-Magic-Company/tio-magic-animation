@@ -94,7 +94,15 @@ SCHEMAS = {
             "callback_on_step_end": {"type": "Callable", "description": "A function called at the end of each denoising step."},
             "callback_on_step_end_tensor_inputs": {"type": list, "description": "The list of tensor inputs for the callback_on_step_end function."}
         }
-    }
+    },
+    "luma-ray-2": {
+        "required": {
+            "prompt": {"type": str, "description": "Text prompt to guide generation"},
+            "first_frame": {"type": str, "description": "URL to first frame"},
+            "last_frame": {"type": str, "description": "URL to last frame"}
+        },
+        "optional": {}
+    },
 
     # Add more models as needed
 }
