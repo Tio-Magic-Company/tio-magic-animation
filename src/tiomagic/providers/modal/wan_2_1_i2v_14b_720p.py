@@ -1,3 +1,4 @@
+from fastapi import Body
 import modal
 from pathlib import Path
 from fastapi.responses import JSONResponse
@@ -45,6 +46,7 @@ image = (
         "gradio>=5.0.0",
         "numpy>=1.23.5,<2",
         "fastapi[standard]",
+        "peft",
     ).env({"HF_HUB_CACHE": CACHE_PATH})
 )
 
@@ -67,16 +69,30 @@ class I2V:
         import torch
         from diffusers import AutoencoderKLWan, WanImageToVideoPipeline
         from transformers import CLIPVisionModel
-
         print("Loading models...")
         image_encoder = CLIPVisionModel.from_pretrained(
-            MODEL_ID, subfolder="image_encoder", torch_dtype=torch.float32
+            MODEL_ID, 
+            subfolder="image_encoder", 
+            torch_dtype=torch.float32
         )
-        vae = AutoencoderKLWan.from_pretrained(MODEL_ID, subfolder="vae", torch_dtype=torch.float32)
+        vae = AutoencoderKLWan.from_pretrained(
+            MODEL_ID, 
+            subfolder="vae", 
+            torch_dtype=torch.float32)
         self.pipe = WanImageToVideoPipeline.from_pretrained(
-            MODEL_ID, vae=vae, image_encoder=image_encoder, torch_dtype=torch.bfloat16
+            MODEL_ID, 
+            vae=vae, 
+            image_encoder=image_encoder, 
+            torch_dtype=torch.bfloat16
         )
+        
+        # Completely remove any LoRA to ensure clean base model
+        if hasattr(self.pipe, 'unload_lora_weights'):
+            print("unloading lora weights")
+            self.pipe.unload_lora_weights()
+
         self.pipe.to("cuda")
+        # self.pipe.enable_model_cpu_offload()
 
         print("Models loaded successfully.")
     @modal.method()
@@ -119,10 +135,9 @@ class I2V:
                 file_path=data.get("image") if isinstance(data.get("image"), str) else None
             )
 
-        # Create Interpolate instance and call generate
         try:
-            interpolate_instance = I2V()
-            call = interpolate_instance.generate.spawn(data)
+            i2v_instance = I2V()
+            call = i2v_instance.generate.spawn(data)
         except Exception as e:
             raise DeploymentError(
                 service="Modal",
@@ -130,7 +145,7 @@ class I2V:
                 app_name=APP_NAME
             )
 
-        return JSONResponse({"call_id": call.object_id, "feature_type": FeatureType.INTERPOLATE})
+        return JSONResponse({"call_id": call.object_id, "feature_type": FeatureType.IMAGE_TO_VIDEO})
 
 class Wan21I2V14b720p(ModalProviderBase):
     def __init__(self, api_key=None):
@@ -139,11 +154,10 @@ class Wan21I2V14b720p(ModalProviderBase):
         self.modal_app = app
         self.modal_class_name = "I2V"
     def _prepare_payload(self, required_args: Dict[str, Any], **kwargs) -> Dict[str, Any]:
-        """Prepare payload specific to Wan2.1 Vace Interpolate model.
+        """Prepare payload specific to Wan2.1 I2V 14b 720 model.
         Break out required args into payload
         """
         payload = super()._prepare_payload(required_args, **kwargs)
-        # payload = {"prompt": required_args['prompt']}
         payload["feature_type"] = FeatureType.IMAGE_TO_VIDEO
 
         if payload['image'] is None:
@@ -154,11 +168,29 @@ class Wan21I2V14b720p(ModalProviderBase):
             payload["image"] = local_image_to_base64(payload['image'])
         return payload
 
+# 
 # Create a subclass with the handlers
 class WebAPI(GenericWebAPI):
     feature_handlers = {
         FeatureType.IMAGE_TO_VIDEO: I2V
     }
+    # @modal.fastapi_endpoint(method="POST")
+    # def web_inference(self, data: dict = Body(...)):
+    #     feature_type = data.pop("feature_type", None)
+    #     model = data.pop("model", None)  # Extract model from data
+    #     if not feature_type:
+    #         return {"error": f"A 'feature_type' is required. Must be one of: {list(self.feature_handlers.keys())}"}
+
+    #     if feature_type not in self.feature_handlers:
+    #         return {"error": f"Unknown feature_type: {feature_type}. Must be one of: {list(self.feature_handlers.keys())}"}
+
+    #     # Route to appropriate class based on model and feature_type
+    #     if feature_type == FeatureType.IMAGE_TO_VIDEO and model == "wan2.1-i2v-14b-720p-fusionx":
+    #         return FusionXI2V.handle_web_inference(data)
+    #     else:
+    #         # Route to default handler
+    #         handler_class = self.feature_handlers[feature_type]
+    #         return handler_class.handle_web_inference(data)
 
 # Apply Modal decorator
 WebAPI = app.cls(
@@ -177,3 +209,9 @@ registry.register(
     provider="modal",
     implementation=Wan21I2V14b720p
 )
+# registry.register(
+#     feature=FeatureType.IMAGE_TO_VIDEO,
+#     model="wan2.1-i2v-14b-720p-fusionx",
+#     provider="modal",
+#     implementation=Wan21I2V14bFusionX720p
+# )
