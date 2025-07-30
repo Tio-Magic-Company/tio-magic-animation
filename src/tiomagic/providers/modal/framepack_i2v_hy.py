@@ -5,10 +5,10 @@ from fastapi.responses import JSONResponse
 from .base import GPUType, GenericWebAPI, ModalProviderBase
 from typing import Any, Dict
 from ...core.registry import registry
-from ...core.utils import load_image_robust, is_local_path, local_image_to_base64, create_timestamp, extract_image_dimensions
+from ...core._utils import load_image_robust, is_local_path, local_image_to_base64, create_timestamp, extract_image_dimensions
 from ...core.constants import FeatureType
 from ...core.errors import (
-    DeploymentError, ValidationError, ProcessingError
+    DeploymentError, ProcessingError
 )
 
 APP_NAME = "test-framepack-i2v-hy"
@@ -102,22 +102,7 @@ class I2V:
         return video_bytes 
     @staticmethod
     def handle_web_inference(data: Dict[str, Any]): 
-        prompt = data.get("prompt")
         image = data.get("image")
-
-        if not prompt:
-            raise ValidationError(
-                field="prompt",
-                message="Arguemt 'prompt' is required for image-to-video generation",
-                value=prompt
-            )
-        
-        if not image:
-            raise ValidationError(
-                field="image", 
-                message="Argument 'image' is required for image-to-video generation",
-                value=image
-            )
 
         try:
             image = load_image_robust(image)
@@ -219,28 +204,8 @@ class Interpolate:
         return video_bytes 
     @staticmethod
     def handle_web_inference(data: Dict[str, Any]):
-        prompt = data.get("prompt")
         first_frame = data.get("first_frame")
         last_frame = data.get("last_frame")
-
-        if not prompt:
-            raise ValidationError(
-                field="prompt",
-                message="Arguemt 'prompt' is required for interpolate generation",
-                value=prompt
-            )
-        if not first_frame:
-            raise ValidationError(
-                field="first_frame", 
-                message="Argument 'first_frame' is required for interpolate generation",
-                value=image
-            )
-        if not last_frame:
-            raise ValidationError(
-                field="last_frame", 
-                message="Argument 'last_frame' is required for interpolate generation",
-                value=image
-            )
 
         try:
             # load_image_robust can handle both URLs and base64 strings

@@ -3,10 +3,10 @@ from fastapi.responses import JSONResponse
 import os
 from typing import Any, Dict
 
-from tiomagic.core.errors import GenerationError
+from ...core.errors import GenerationError
 
 from ...core.registry import registry
-from ...core.utils import is_local_path
+from ...core._utils import is_local_path
 from ...core.constants import Generation
 from .base import LocalProviderBase
 import base64

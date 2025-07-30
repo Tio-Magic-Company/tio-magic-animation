@@ -5,7 +5,7 @@ from fastapi.responses import JSONResponse
 from .base import GPUType, GenericWebAPI, ModalProviderBase
 from typing import Any, Dict
 from ...core.registry import registry
-from ...core.utils import load_image_robust, is_local_path, local_image_to_base64, create_timestamp, extract_image_dimensions
+from ...core._utils import load_image_robust, is_local_path, local_image_to_base64, create_timestamp, extract_image_dimensions
 from ...core.constants import FeatureType
 from ...core.schemas import FEATURE_SCHEMAS
 from ...core.errors import (
@@ -151,14 +151,8 @@ class Interpolate:
         return video_bytes
     @staticmethod
     def handle_web_inference(data: dict):
-        prompt = data.get("prompt")
         first_frame = data.get("first_frame")
         last_frame = data.get("last_frame")
-
-        if not prompt:
-            return {"error": "A 'prompt' is required."}
-        if not first_frame or not last_frame:
-            return {"error": "Both 'first_frame' and 'last_frame' are required."}
 
         try:
             # load_image_robust can handle both URLs and base64 strings

@@ -1,15 +1,14 @@
 import time
-from fastapi.responses import JSONResponse
 import os
 from typing import Any, Dict
 
 import requests
 
 from ...core.errors import GenerationError, ProcessingError
-from ...core.utils.utils import create_timestamp
+from ...core._utils._utils import create_timestamp
 
 from ...core.registry import registry
-from ...core.utils import is_local_path
+from ...core._utils import is_local_path
 from ...core.constants import Generation
 from .base import LocalProviderBase
 from ...core.constants import FeatureType

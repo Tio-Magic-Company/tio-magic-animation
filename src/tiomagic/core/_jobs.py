@@ -8,9 +8,8 @@ import traceback
 from pathlib import Path
 import json
 from typing import Dict, Optional
-import os
 
-from .utils import create_timestamp
+from ._utils import create_timestamp
 
 class JobStatus(str, Enum):
     QUEUED = "queued"
@@ -184,7 +183,7 @@ class Job:
         """
         jobs = self.load_all_jobs()
         jobs[self.job_id] = self
-        print(f"Job {self.job_id} saved to log file")
+        print(f"--> Job {self.job_id} saved to log file")
         self.save_jobs(jobs)
 
 

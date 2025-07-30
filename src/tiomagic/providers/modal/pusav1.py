@@ -4,12 +4,11 @@ import modal
 from pathlib import Path
 from PIL import Image
 
-from tiomagic.core.utils.modal_helpers import load_image_robust
-
+from ...core._utils._modal_helpers import load_image_robust
 from ...core.registry import registry
 from ...core.constants import FeatureType
-from ...core.errors import DeploymentError, ProcessingError, ValidationError
-from ...core.utils.utils import create_timestamp, extract_image_dimensions, is_local_path, local_image_to_base64
+from ...core.errors import DeploymentError, ProcessingError
+from ...core._utils._utils import create_timestamp, is_local_path, local_image_to_base64
 from .base import GPUType, GenericWebAPI, ModalProviderBase
 
 
@@ -237,13 +236,6 @@ class T2V:
     @staticmethod
     def handle_web_inference(data: Dict[str, Any]):
         """handle text-to-video generation"""
-        prompt = data.get("prompt", None)
-        if not prompt:
-            raise ValidationError(
-                field="prompt",
-                message="Arguemt 'prompt' is required for text-to-video generation",
-                value=prompt
-            )
         try:
             t2v_instance = T2V()
             call = t2v_instance.generate.spawn(data)
@@ -430,7 +422,7 @@ class I2V:
     def generate(self, data: Dict[str, Any]):
         from diffusers.utils import export_to_video
 
-        image = data.get('image', None) #Expect PIL Image
+        image = data.pop('image', None) #Expect PIL Image
         
         # Convert to RGB mode and resize to 1280x720 using LANCZOS resampling
         if image is not None:
@@ -447,7 +439,6 @@ class I2V:
         multi_frame_images = {
             cond_position: (image, noise_multipliers)  # Frame 0: use start image with no noise
         }
-        data.pop('image')
         data['multi_frame_images'] = multi_frame_images
         
         frames = self.pipe(**data)
@@ -466,21 +457,8 @@ class I2V:
     def handle_web_inference(data: dict):
         """Handle image-to-video generation."""
         print("***MODAL HANDLE WEB INFERENCE METHOD***")
-
-        prompt = data.get("prompt")
         image = data.get("image")
-        if not prompt:
-            raise ValidationError(
-                field="prompt",
-                message="Arguemt 'prompt' is required for image-to-video generation",
-                value=prompt
-            )
-        if not image:
-            raise ValidationError(
-                field="image", 
-                message="Argument 'image' is required for image-to-video generation",
-                value=image
-            )
+        
         try:
             image = load_image_robust(image)
             data['image'] = image

@@ -7,11 +7,10 @@ import os
 from typing import Any, Dict, Optional
 from enum import Enum
 
-from tiomagic.core.errors import APIError, ConfigurationError, GenerationError
-
-from ...core.utils import check_modal_app_deployment, create_timestamp
+from ...core.errors import APIError, ConfigurationError, GenerationError
+from ...core._utils import check_modal_app_deployment, create_timestamp
 from ...core.constants import Generation
-from ...core.jobs import JobStatus
+from ...core._jobs import JobStatus
 import requests
 
 class GPUType(str, Enum):
@@ -66,11 +65,9 @@ class ModalProviderBase:
         Returns:
             Dict containing generation result with call_id and status
         """
-        print("***BASE CLASS GENERATE***")
-
         self._validate_config()
 
-        print(f"Running {self.app_name} generate with prompt: {required_args['prompt']}")
+        print(f"--> Running {self.app_name} generate with prompt: {required_args['prompt']}")
 
         generation = Generation(
             timestamp=create_timestamp(),
@@ -81,31 +78,22 @@ class ModalProviderBase:
         try:
             # Check deployment status
             deployment_status = check_modal_app_deployment(self.modal_app, self.app_name)
-            print("return status: ", deployment_status)
+            print("--> Deployment Status: ", deployment_status)
 
             if not deployment_status['success']:
-                generation.update(message=f"App '{self.app_name}' is not deployed: {deployment_status['message']}")
+                generation.update(message=f"--> App '{self.app_name}' is not deployed: {deployment_status['message']}")
                 return generation.to_dict()
 
             if not deployment_status['endpoints']:
-                generation.update(message=f"No endpoints found for app '{self.app_name}': {deployment_status['message']}")
+                generation.update(message=f"--> No endpoints found for app '{self.app_name}': {deployment_status['message']}")
                 return generation.to_dict()
-
-            # Get Modal class and web URLs
-            print("app name: ", self.app_name)
-            # print("modal class name: ", self.modal_class_name)
-            # modal_class = modal.Cls.from_name(self.app_name, self.modal_class_name)
-            # print("modal instance, ", modal_class)
-
-            # web_inference_url = modal_class().web_inference.get_web_url()
-            # print("web_url: ", web_inference_url)
 
             # Get Modal WebAPI class
             modal_web_api_class = modal.Cls.from_name(self.app_name, 'WebAPI')
-            print('modal instance', modal_web_api_class)
+            print('--> Modal instance', modal_web_api_class)
 
             web_inference_url = modal_web_api_class().web_inference.get_web_url()
-            print("web url: ", web_inference_url)
+            print("--> Web url: ", web_inference_url)
 
             # Prepare request payload
             payload = self._prepare_payload(required_args, **kwargs)
@@ -117,9 +105,9 @@ class ModalProviderBase:
                 return generation.to_dict()
 
             # Update generation with call_id
-            message = "generation queued."
+            message = "--> Generation queued."
             generation.update(call_id=call_id, status=JobStatus.QUEUED, message=message)
-            print(f"Got call_id: {call_id}")
+            print(f"--> Received call_id: {call_id}")
 
             return generation.to_dict()
         except Exception as e:
@@ -170,8 +158,7 @@ class ModalProviderBase:
         from json import JSONDecodeError
         try:
             print("***BASE CLASS MAKE WEB INFERENCE REQUEST***")
-
-            print("enter try - this may take a few minutes if it is your first time deploying" )
+            print("--> Making Web Inference Request - this may take a few minutes if it is your first time deploying" )
             response = requests.post(
                 url, 
                 json=payload,
@@ -185,7 +172,7 @@ class ModalProviderBase:
 
             try:
                 response_data = response.json()
-                print(f"Web inference response: {response_data}")
+                print(f"--> Web inference response: {response_data}")
             except JSONDecodeError:
                 generation.update(message=f"Error parsing response as JSON: {response.text}")
                 return None
@@ -197,7 +184,6 @@ class ModalProviderBase:
             return response_data["call_id"]
 
         except requests.RequestException as e:
-            print("request error")
             generation.update(message=f"Request error: {str(e)}")
             raise APIError(response_body=str(e))
 
@@ -214,14 +200,13 @@ class ModalProviderBase:
         print("MODAL CHECK GENERATION STATUS")
 
         try:
-            print("enter try", generation["call_id"])
             fc = FunctionCall.from_id(generation["call_id"])
             video_bytes = fc.get(timeout=0)
 
             # Save video to file
             video_path = self._save_video_file(video_bytes, generation["call_id"])
 
-            print(f"Video saved to: {video_path}")
+            print(f"--> Generation Complete. Video saved to: {video_path}")
             generation.update(
                 status=JobStatus.COMPLETED, 
                 timestamp=create_timestamp(),
@@ -230,7 +215,7 @@ class ModalProviderBase:
             )
 
         except TimeoutError:
-            print("NOT READY YET - MODAL CHECK GENERATION STATUS")
+            print("--> Generation is not complete yet. Please check back later")
             generation.update(
                 status=JobStatus.RUNNING,
                 message="generation is not complete yet",
@@ -238,7 +223,6 @@ class ModalProviderBase:
             )
 
         except Exception as e:
-            print("EXCEPTION IN MODAL CHECK GEN STATUS", e)
             self._handle_generation_error(e, generation)
             raise GenerationError(reason=str(e))
 
@@ -246,7 +230,7 @@ class ModalProviderBase:
 
     def cancel_job(self, generation: Generation) -> Generation:
         from modal.functions import FunctionCall
-        print("MODAL CANCEL JOB")
+        print("--> Canceling job")
         try:
             fc = FunctionCall.from_id(generation["call_id"])
             fc.cancel()
@@ -333,7 +317,7 @@ class GenericWebAPI:
         import io
         from modal import FunctionCall
 
-        print(f"Polling for call_id: {call_id}, feature_type: {feature_type}")
+        print(f"--> Polling for call_id: {call_id}, feature_type: {feature_type}")
 
         try:
             call = FunctionCall.from_id(call_id)

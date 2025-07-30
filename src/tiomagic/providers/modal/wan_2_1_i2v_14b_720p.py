@@ -1,4 +1,3 @@
-from fastapi import Body
 import modal
 from pathlib import Path
 from fastapi.responses import JSONResponse
@@ -6,7 +5,7 @@ from fastapi.responses import JSONResponse
 from .base import GPUType, GenericWebAPI, ModalProviderBase
 from typing import Any, Dict
 from ...core.registry import registry
-from ...core.utils import load_image_robust, is_local_path, local_image_to_base64, create_timestamp, extract_image_dimensions
+from ...core._utils import load_image_robust, is_local_path, local_image_to_base64, create_timestamp, extract_image_dimensions
 from ...core.constants import FeatureType
 from ...core.errors import (
     DeploymentError, ProcessingError
@@ -113,13 +112,7 @@ class I2V:
         return video_bytes
     @staticmethod
     def handle_web_inference(data: Dict[str, Any]):
-        prompt = data.get("prompt")
         image = data.get("image")
-
-        if not prompt:
-            return {"error": "A 'prompt' is required."}
-        if not image:
-            return {"error": "An 'image' are required."}
 
         try:
             # load_image_robust can handle both URLs and base64 strings
@@ -168,29 +161,12 @@ class Wan21I2V14b720p(ModalProviderBase):
             payload["image"] = local_image_to_base64(payload['image'])
         return payload
 
-# 
+
 # Create a subclass with the handlers
 class WebAPI(GenericWebAPI):
     feature_handlers = {
         FeatureType.IMAGE_TO_VIDEO: I2V
     }
-    # @modal.fastapi_endpoint(method="POST")
-    # def web_inference(self, data: dict = Body(...)):
-    #     feature_type = data.pop("feature_type", None)
-    #     model = data.pop("model", None)  # Extract model from data
-    #     if not feature_type:
-    #         return {"error": f"A 'feature_type' is required. Must be one of: {list(self.feature_handlers.keys())}"}
-
-    #     if feature_type not in self.feature_handlers:
-    #         return {"error": f"Unknown feature_type: {feature_type}. Must be one of: {list(self.feature_handlers.keys())}"}
-
-    #     # Route to appropriate class based on model and feature_type
-    #     if feature_type == FeatureType.IMAGE_TO_VIDEO and model == "wan2.1-i2v-14b-720p-fusionx":
-    #         return FusionXI2V.handle_web_inference(data)
-    #     else:
-    #         # Route to default handler
-    #         handler_class = self.feature_handlers[feature_type]
-    #         return handler_class.handle_web_inference(data)
 
 # Apply Modal decorator
 WebAPI = app.cls(
@@ -209,9 +185,3 @@ registry.register(
     provider="modal",
     implementation=Wan21I2V14b720p
 )
-# registry.register(
-#     feature=FeatureType.IMAGE_TO_VIDEO,
-#     model="wan2.1-i2v-14b-720p-fusionx",
-#     provider="modal",
-#     implementation=Wan21I2V14bFusionX720p
-# )

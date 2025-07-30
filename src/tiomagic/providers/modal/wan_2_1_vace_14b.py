@@ -6,7 +6,7 @@ from fastapi.responses import JSONResponse
 from .base import GPUType, GenericWebAPI, ModalProviderBase
 from typing import Any, Dict
 from ...core.registry import registry
-from ...core.utils import prepare_video_and_mask, load_image_robust, is_local_path, local_image_to_base64, create_timestamp, load_video_robust, extract_image_dimensions
+from ...core._utils import prepare_video_and_mask, load_image_robust, is_local_path, local_image_to_base64, create_timestamp, load_video_robust, extract_image_dimensions
 from ...core.constants import FeatureType
 from ...core.schemas import FEATURE_SCHEMAS
 from ...core.errors import (
@@ -123,15 +123,7 @@ class T2V:
         return video_bytes 
     @staticmethod
     def handle_web_inference(data: dict):
-        """Handle text-to-video generation."""
-        prompt = data.get("prompt")
-
-        if not prompt:
-            return {"error": "A 'prompt' is required."}
-
-        print(f"text_to_video - prompt: {prompt}")
-
-        print("handle web inference data: ", data)
+        """Handle text-to-video generation.""" 
         # Create T2V instance and call generate
         try:
             t2v_instance = T2VAppClass()
@@ -227,28 +219,7 @@ class I2V:
     def handle_web_inference(data: dict):
         """Handle image-to-video generation."""
         print("***MODAL HANDLE WEB INFERENCE METHOD***")
-
-
-        prompt = data.get("prompt")
         image = data.get("image")
-        if not prompt:
-            raise ValidationError(
-                field="prompt",
-                message="Arguemt 'prompt' is required for image-to-video generation",
-                value=prompt
-            )
-        
-        if not image:
-            raise ValidationError(
-                field="image", 
-                message="Argument 'image' is required for image-to-video generation",
-                value=image
-            )
-
-        # print(f"image_to_video - prompt: {prompt}")
-        # print(f"image_to_video - image: {image}")
-        # print(f"image_to_video - negative prompt: {negative_prompt}")
-
         try:
             image = load_image_robust(image)
             data['image'] = image
@@ -356,31 +327,8 @@ class Interpolate:
     @staticmethod
     def handle_web_inference(data: dict):
         """Handle frame interpolation."""  
-
-        prompt = data.get("prompt")
         first_frame = data.get("first_frame")
         last_frame = data.get("last_frame")
-
-        if not prompt:
-            raise ValidationError(
-                field="prompt",
-                message="Arguemt 'prompt' is required for interpolate generation",
-                value=prompt
-            )
-        
-        if not first_frame:
-            raise ValidationError(
-                field="image", 
-                message="Argument 'first_frame' is required for interpolate generation",
-                value=image
-            )
-        if not last_frame:
-            raise ValidationError(
-                field="image", 
-                message="Argument 'last_frame' is required for interpolate generation",
-                value=image
-            )
-
         try:
             # load_image_robust can handle both URLs and base64 strings, return PIL.Image
             first_frame = load_image_robust(first_frame)

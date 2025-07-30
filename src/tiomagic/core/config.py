@@ -2,7 +2,7 @@
 Handles provider settings, API keys, and other global confiurations
 """
 
-from tiomagic.core.errors import UnknownProviderError
+from .errors import UnknownProviderError
 
 
 class Configuration:

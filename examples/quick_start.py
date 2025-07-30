@@ -3,8 +3,8 @@ from dotenv import load_dotenv
 
 def text_to_video_example():
     tm.configure(provider="modal")
-    prompt = "the playful penguin picks up the green cat eye sunglasses and puts them on."
-    # prompt = "A suited astronaut, with the red dust of Mars clinging to their boots, reaches out to shake hands with an alien being, their skin a shimmering blue, under the pink-tinged sky of the fourth planet. In the background, a sleek silver rocket, a beacon of human ingenuity, stands tall, its engines powered down, as the two representatives of different worlds exchange a historic greeting amidst the desolate beauty of the Martian landscape."
+    # prompt = "the playful penguin picks up the green cat eye sunglasses and puts them on."
+    prompt = "A suited astronaut, with the red dust of Mars clinging to their boots, reaches out to shake hands with an alien being, their skin a shimmering blue, under the pink-tinged sky of the fourth planet. In the background, a sleek silver rocket, a beacon of human ingenuity, stands tall, its engines powered down, as the two representatives of different worlds exchange a historic greeting amidst the desolate beauty of the Martian landscape."
     # prompt = "A golden retriever, sporting sleek black sunglasses, with its lengthy fur flowing in the breeze, sprints playfully across a rooftop terrace, recently refreshed by a light rain. The scene unfolds from a distance, the dog's energetic bounds growing larger as it approaches the camera, its tail wagging with unrestrained joy, while droplets of water glisten on the concrete behind it. The overcast sky provides a dramatic backdrop, emphasizing the vibrant golden coat of the canine as it dashes towards the viewer."
     required_args = {
         "prompt": prompt,
@@ -21,7 +21,7 @@ def text_to_video_example():
 
 def image_to_video_example():
     tm.configure(provider="modal")
-    # tm.configure(provider="local")
+    # tm.configure(provider="local, api_key=os.getenv(""))
     # prompt = "CG animation style, a small blue bird takes off from the ground, flapping its wings. The bird's feathers are delicate, with a unique pattern on its chest. The background shows a blue sky with white clouds under bright sunshine. The camera follows the bird upward, capturing its flight and the vastness of the sky from a close-up, low-angle perspective."
     # image = "https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/flf2v_input_first_frame.png"
     # image = "/Users/karenlin/Documents/tm-animation/tio-magic-animation/images/test_blob.png"
@@ -41,11 +41,11 @@ def image_to_video_example():
 
     # tm.image_to_video(model="wan-14b-i2v-fusionx", required_args=required_args, **optional_args)
 
-    # tm.image_to_video(model="pusa-v1", required_args=required_args, **optional_args)
+    tm.image_to_video(model="pusa-v1", required_args=required_args, **optional_args)
     # tm.image_to_video(model="framepack-i2v-hy", required_args=required_args, **optional_args)
     # tm.image_to_video(model="cogvideox-5b-image-to-video", required_args=required_args, **optional_args)
     # tm.image_to_video(model="wan2.1-vace-14b", required_args=required_args, **optional_args)
-    tm.image_to_video(model="wan2.1-vace-14b-i2v-fusionx", required_args=required_args, **optional_args)
+    # tm.image_to_video(model="wan2.1-vace-14b-i2v-fusionx", required_args=required_args, **optional_args)
     # tm.image_to_video(model="veo-2.0-generate-001", required_args=required_args, **optional_args)
 
 def interpolate_example():
@@ -108,12 +108,12 @@ if __name__ == "__main__":
 
     status = "dca7eea1-c3c6-4fd7-97ae-db73af877b92"
 
-    # text_to_video_example()
-    # image_to_video_example()
+    text_to_video_example()
+    image_to_video_example()
     # interpolate_example()
     # pose_guidance_example()
 
-    check_status(status)
+    # check_status(status)
     # cancel_job(status)
 
 

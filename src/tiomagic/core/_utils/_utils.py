@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 import base64
 from typing import Any, Dict
-from tiomagic.core.errors import ProcessingError
+from ..errors import ProcessingError
 
 
 def is_local_path(path: str) -> bool:
