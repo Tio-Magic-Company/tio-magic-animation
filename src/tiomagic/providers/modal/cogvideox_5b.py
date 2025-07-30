@@ -2,12 +2,12 @@ import modal
 from pathlib import Path
 from fastapi.responses import JSONResponse
 
-from ...core.errors import DeploymentError, ValidationError
+from ...core.errors import DeploymentError
 
 from .base import GPUType, GenericWebAPI, ModalProviderBase
 from typing import Any, Dict
 from ...core.registry import registry
-from ...core.utils import create_timestamp
+from ...core._utils import create_timestamp
 from ...core.constants import FeatureType
 
 # --- Configuration ---
@@ -113,13 +113,6 @@ class T2V:
     @staticmethod
     def handle_web_inference(data: Dict[str, Any]):
         """handle text-to-video generation"""
-        prompt = data.get("prompt", None)
-        if not prompt:
-            raise ValidationError(
-                field="prompt",
-                message="Arguemt 'prompt' is required for text-to-video generation",
-                value=prompt
-            )
         try:
             t2v_instance = T2V()
             call = t2v_instance.generate.spawn(data)
@@ -145,7 +138,6 @@ class CogVideoXTextToVideo5B(ModalProviderBase):
         # Add feature_type for routing
         payload["feature_type"] = FeatureType.TEXT_TO_VIDEO
 
-        # print("payload: ", payload)
         return payload
 
 # Create a subclass with the handlers

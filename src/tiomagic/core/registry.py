@@ -41,8 +41,6 @@ class Registry:
             ValueError: If no implementation exists for the combination
         """
         key = (feature, model, provider)
-        print("registry implementations: ", self._implementations)
-        print("registry models, ", self._models)
         if key not in self._implementations:
             # Try with default model if none specified
             if model is None:

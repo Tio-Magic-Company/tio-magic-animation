@@ -1,7 +1,7 @@
 import os
 from typing import Any, Dict
 
-from tiomagic.core.errors import ConfigurationError, GenerationError, ValidationError
+from ...core.errors import ConfigurationError, GenerationError, ValidationError
 from ...core.constants import Generation
 
 

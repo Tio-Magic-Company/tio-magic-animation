@@ -1,4 +1,4 @@
-from . import image_to_video, text_to_video, interpolate, pose_guidance
+from . import image_to_video, interpolate, pose_guidance, text_to_video
 
 FEATURE_SCHEMAS = {
     "text_to_video": text_to_video.SCHEMAS,

@@ -5,10 +5,10 @@ from fastapi.responses import JSONResponse
 from .base import GPUType, GenericWebAPI, ModalProviderBase
 from typing import Any, Dict
 from ...core.registry import registry
-from ...core.utils import load_image_robust, is_local_path, local_image_to_base64, create_timestamp, extract_image_dimensions
+from ...core._utils import load_image_robust, is_local_path, local_image_to_base64, create_timestamp, extract_image_dimensions
 from ...core.constants import FeatureType
 from ...core.errors import (
-    DeploymentError, GenerationError, ValidationError, ProcessingError
+    DeploymentError, GenerationError, ProcessingError
 )
 
 # --- Configuration ---
@@ -90,13 +90,8 @@ class I2V:
                                   generation_params=data,)
     @staticmethod
     def handle_web_inference(data: dict[str, Any]):
-        prompt = data.get("prompt")
         image = data.get("image")
-
-        if not prompt:
-            return {"error": "A 'prompt' is required."}
-        if not image:
-            return {"error": "An 'image' is required."}
+        
         try:
             image = load_image_robust(image)
             data['image'] = image

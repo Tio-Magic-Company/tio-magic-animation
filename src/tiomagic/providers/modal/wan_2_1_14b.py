@@ -6,7 +6,7 @@ from pathlib import Path
 from .base import GPUType, GenericWebAPI, ModalProviderBase
 from typing import Any, Dict
 from ...core.registry import registry
-from ...core.utils import create_timestamp
+from ...core._utils import create_timestamp
 from ...core.constants import FeatureType
 from ...core.errors import (
     APIError,
@@ -270,14 +270,6 @@ class FusionXT2V:
     @staticmethod
     def handle_web_inference(data: dict):
         """Handle text-to-video generation."""
-        prompt = data.get("prompt")
-
-        if not prompt:
-            return {"error": "A 'prompt' is required."}
-
-        print(f"text_to_video - prompt: {prompt}")
-
-        print("handle web inference data: ", data)
         # Create T2V instance and call generate
         try:
             t2v_instance = FusionXT2V()
