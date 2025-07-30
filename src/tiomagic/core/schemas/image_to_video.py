@@ -236,6 +236,13 @@ SCHEMAS = {
             "max_sequence_length": {"type": int, "default": 512, "description": "The maximum sequence length of the text encoder."}
         }
     },
+    "luma-ray-2": {
+        "required": {
+            "prompt": {"type": str, "description": "Text prompt to guide generation"},
+            "image": {"type": str, "description": "URL to input image"}
+        },
+        "optional": {}
+    },
 
     # Add more models as needed
 }
