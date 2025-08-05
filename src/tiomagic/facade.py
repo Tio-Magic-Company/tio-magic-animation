@@ -417,7 +417,22 @@ class TioMagic:
                 reason="Job has no active generation to cancel"
             )
         
+    def list_implementations(self):
+        """List all implementations available
+        Models listed and sorted by provider or feature
+        """
+        providers = registry.get_providers()
+        features = registry.get_features()
+        for provider in providers:
+            print(f"{provider}: ")
+            for feature in features:
+                feature_models = registry.get_models(feature=feature, provider=provider)
+                if len(feature_models) > 0:
+                    print(f"\t{feature}: ")
+                    for model in feature_models:
+                        print(f"\t\t{model}")
 
+    
     def _create_implementation(self, impl_class, provider):
         """Create an implementation instance with appropriate config.
         
@@ -426,7 +441,7 @@ class TioMagic:
         """
         if provider == "local":
             # return impl_class(model_path=self._config.get_model_path())
-            return impl_class(api_key=self._config.get_api_key("local"))
+            return impl_class()
         elif provider == "modal":
             return impl_class(api_key=self._config.get_api_key("modal"))
         elif provider == "baseten":

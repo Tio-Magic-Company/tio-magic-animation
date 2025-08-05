@@ -126,7 +126,7 @@ class ModalProviderBase:
         Returns:
             Dict containing the request payload
         """
-        print("***BASE CLASS PREPARE PAYLOAD***")
+        print("--> Preparing payload")
 
         # Base payload - subclasses can override to add model-specific parameters
         if required_args is None or required_args['prompt'] is None:
@@ -157,7 +157,6 @@ class ModalProviderBase:
         """
         from json import JSONDecodeError
         try:
-            print("***BASE CLASS MAKE WEB INFERENCE REQUEST***")
             print("--> Making Web Inference Request - this may take a few minutes if it is your first time deploying" )
             response = requests.post(
                 url, 
@@ -197,7 +196,6 @@ class ModalProviderBase:
             Updated generation object with status and results
         """
         from modal.functions import FunctionCall
-        print("MODAL CHECK GENERATION STATUS")
 
         try:
             fc = FunctionCall.from_id(generation["call_id"])

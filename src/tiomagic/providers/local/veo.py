@@ -6,7 +6,7 @@ from typing import Any, Dict
 from ...core.errors import GenerationError
 
 from ...core.registry import registry
-from ...core._utils import is_local_path
+from ...core._utils import is_local_path, create_timestamp
 from ...core.constants import Generation
 from .base import LocalProviderBase
 import base64
@@ -22,32 +22,6 @@ MODEL_NAME = 'veo-2.0-generate-001'
 # GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 # if not GOOGLE_API_KEY:
 #     raise ValueError("GOOGLE_API_KEY not found in environment variables")
-
-class I2V:
-    async def generate(self, data: Dict[str, Any], **kwargs) -> Dict[str, Any]:
-        prompt = data.get('prompt')
-        image = data.get('image')
-
-        print(f"Starting video generation with model: {MODEL_NAME}, prompt: {prompt}")
-        try:
-            # start generation
-            config = types.GenerateVideosConfig(kwargs)
-            operation = await self.client.models.generate_videos(
-                model=MODEL_NAME,
-                prompt=prompt,
-                image=image,
-                config=config
-            )
-
-            print(f"generation started with operation: {operation}, {operation.name}")
-            return JSONResponse({"call_id": operation.name, "feature_type": FeatureType.IMAGE_TO_VIDEO})
-        except Exception as e:
-            print(f"Error generating video: {str(e)}")
-            raise GenerationError(app_name=APP_NAME, 
-                                  model=MODEL_NAME,
-                                  reason=str(e)
-                                  )
-
 
 class Veo20Generate001(LocalProviderBase):
     def __init__(self):
@@ -143,10 +117,6 @@ class Veo20Generate001(LocalProviderBase):
 
             # Call Google Veo API
             config = types.GenerateVideosConfig(**kwargs)
-            print('-->config done: ')
-            print("-->model name:", MODEL_NAME)
-            print("--> operation creation start")
-
 
             operation = self.client.models.generate_videos(
                 model=MODEL_NAME,
@@ -154,9 +124,9 @@ class Veo20Generate001(LocalProviderBase):
                 image= payload['image'],
                 config=config
             )
-            print("--> operation creation done", operation)
+            print("--> Operation creation done", operation)
 
-            print(f"Generation started with operation: {operation.name}")
+            print(f"--> Generation started with operation: {operation.name}")
 
             # https://ai.google.dev/gemini-api/docs/video#generate-from-images
             # https://github.com/googleapis/python-genai/blob/main/google/genai/operations.py#L348
@@ -183,34 +153,38 @@ class Veo20Generate001(LocalProviderBase):
 
             # Wait for completion
             while not operation.done:
-                time.sleep(20)
+                print("Waiting for video generation to complete...")
+                time.sleep(10)
                 operation = self.client.operations.get(operation)
-
+            
             # Download the video
-            for n, generated_video in enumerate(operation.response.generated_videos):
-                video_bytes = self.client.files.download(file=generated_video.video)
+            generated_video = operation.response.generated_videos[0]
+            video_bytes = self.client.files.download(file=generated_video.video)
+            # generated_video.video.save("veo-2-i2v.mp4")
+            timestamp = create_timestamp()
 
-                # Save video to file
-                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                video_filename = f"veo_output_{timestamp}.mp4"
+            video_filename = f"veo_output_{timestamp}.mp4"
 
-                # Get the directory of this file and save to the same directory
-                current_dir = os.path.dirname(os.path.abspath(__file__))
-                repo_root = os.path.dirname(os.path.dirname(os.path.dirname(current_dir)))
-                output_videos_dir = os.path.join(repo_root, "output_videos")
-                video_path = os.path.join(output_videos_dir, video_filename)
+            # Get the directory of this file and save to the same directory
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            repo_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(current_dir))))
+            output_videos_dir = os.path.join(repo_root, "output_videos")
+            os.makedirs(output_videos_dir, exist_ok=True)
+            video_path = os.path.join(output_videos_dir, video_filename)
 
-                with open(video_path, 'wb') as f:
-                    f.write(video_bytes)
+            with open(video_path, 'wb') as f:
+                f.write(video_bytes)
+            print(f"File downloaded as {video_path}")
+            
 
-                generation.update(
-                    call_id=operation.name,
-                    status="completed",
-                    message=f"Video generated and saved to {video_path}",
-                    result_video=video_path
-                )
+            generation.update(
+                call_id=operation.name,
+                status="completed",
+                message=f"Video generated and saved to {video_path}",
+                result_video=video_path
+            )
 
-                return generation.to_dict()
+            return generation.to_dict()
 
         except Exception as e:
             print(f"Error in generate: {str(e)}")
@@ -218,6 +192,7 @@ class Veo20Generate001(LocalProviderBase):
 
             raise GenerationError(app_name=APP_NAME, 
                                   model=MODEL_NAME,
+                                  feature=FeatureType.IMAGE_TO_VIDEO,
                                   reason=str(e)
                                   )
     # def check_generation_status(self, generation: Generation) -> Generation:

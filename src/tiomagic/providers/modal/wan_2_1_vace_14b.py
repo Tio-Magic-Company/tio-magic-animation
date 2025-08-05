@@ -701,7 +701,7 @@ class FusionXI2V:
         if not prompt:
             raise ValidationError(
                 field="prompt",
-                message="Arguemt 'prompt' is required for image-to-video generation",
+                message="Argument 'prompt' is required for image-to-video generation",
                 value=prompt
             )
         

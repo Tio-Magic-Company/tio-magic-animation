@@ -31,9 +31,6 @@ SCHEMAS = {
         },
         "optional": {
             "negative_prompt": {"type": str, "default": "", "description": "The prompt or prompts not to guide the image generation. Ignored when guidance_scale is less than 1."},
-            "video": {"type": list, "description": "The input video (List[PIL.Image.Image]) to be used as a starting point for the generation."},
-            "mask": {"type": list, "description": "The input mask (List[PIL.Image.Image]) that defines which video regions to condition on (black) and which to generate (white)."},
-            "reference_images": {"type": list, "description": "A list of one or more reference images (List[PIL.Image.Image]) as extra conditioning for the generation."},
             "conditioning_scale": {"type": float, "default": 1.0, "description": "The scale applied to the control conditioning latent stream. Can be a float, List[float], or torch.Tensor."},
             "height": {"type": int, "default": 480, "description": "The height in pixels of the generated video."},
             "width": {"type": int, "default": 832, "description": "The width in pixels of the generated video."},
@@ -137,6 +134,22 @@ SCHEMAS = {
             "callback_on_step_end": {"type": "Callable", "description": "A function called at the end of each denoising step during inference."},
             "callback_on_step_end_tensor_inputs": {"type": list, "description": "The list of tensor inputs for the callback_on_step_end function."},
             "max_sequence_length": {"type": int, "default": 512, "description": "The maximum sequence length of the text encoder."}
+        }
+    },
+    "wan2.2-t2v-a14b": {
+        "required": {
+            "prompt": {"type": str, "description": "Text prompt to guide generation"},
+        },
+        "optional": {
+            "negative_prompt": {"type": str, "default": "", "description": "Negative prompt for excluding content from the generation."},
+            "size": {"type": tuple, "default": (1280, 720), "description": "Controls video resolution as a (width, height) tuple."},
+            "frame_num": {"type": int, "default": 81, "description": "The number of frames to generate, which should follow the 4n+1 pattern."},
+            "shift": {"type": float, "default": 5.0, "description": "Noise schedule shift parameter that affects the video's temporal dynamics."},
+            "sample_solver": {"type": str, "default": "unipc", "description": "The solver used to sample the video during generation."},
+            "sampling_steps": {"type": int, "default": 50, "description": "Number of diffusion sampling steps; more steps can improve quality but increase time."},
+            "guide_scale": {"type": float, "default": 5.0, "description": "Classifier-free guidance scale that controls prompt adherence."},
+            "seed": {"type": int, "default": -1, "description": "Random seed for deterministic generation; -1 uses a random seed."},
+            "offload_model": {"type": bool, "default": True, "description": "If True, offloads models to the CPU to conserve VRAM."}
         }
     },
     # Add more models as needed
