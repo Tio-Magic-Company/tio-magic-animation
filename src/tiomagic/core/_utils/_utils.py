@@ -38,9 +38,30 @@ def local_image_to_base64(image_path: str) -> str:
         raise ProcessingError(operation = "convert local image to base64", reason=str(e), media_type="image")
 
 def extract_image_dimensions(image, data: Dict[str, Any]) -> Dict[str, Any]:
-    """get PIL image dimensions and set them in data"""
+    """get image dimensions and set them in data"""
 
-    width, height = image.size
+    # Handle different types of image objects
+    if hasattr(image, 'size'):
+        # PIL Image or similar
+        width, height = image.size
+    elif hasattr(image, 'width') and hasattr(image, 'height'):
+        # Google GenAI Image or similar
+        width, height = image.width, image.height
+    else:
+        # Try to get dimensions from other attributes
+        try:
+            # For Google GenAI Image objects, they might have different attributes
+            if hasattr(image, '_image'):
+                # Try to access the underlying image
+                pil_image = image._image
+                width, height = pil_image.size
+            else:
+                print(f"Warning: Could not extract dimensions from image object of type {type(image)}")
+                return data
+        except Exception as e:
+            print(f"Warning: Could not extract dimensions from image: {e}")
+            return data
+    
     data['width'] = width
     data['height'] = height
     print(f"Extracted image dimensions: {width}x{height}")

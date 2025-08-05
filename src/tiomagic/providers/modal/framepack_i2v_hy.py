@@ -20,7 +20,7 @@ OUTPUTS_PATH = "/outputs"
 MODEL_ID = "hunyuanvideo-community/HunyuanVideo"
 
 GPU_CONFIG: GPUType = GPUType.A100_80GB
-TIMEOUT: int = 1800 # 30 minutes
+TIMEOUT: int = 3000 # 50 minutes
 SCALEDOWN_WINDOW: int = 900 # 15 minutes
 
 image = (
@@ -28,7 +28,7 @@ image = (
     .apt_install("git")
     .pip_install(
         "git+https://github.com/huggingface/diffusers.git",
-        "torch==2.1.2", 
+        "torch==2.4", 
         "transformers", 
         "accelerate", 
         "safetensors",
@@ -36,7 +36,7 @@ image = (
         "av", 
         "einops", 
         "Pillow", 
-        "numpy==1.26.2",
+        "numpy",
         "imageio[ffmpeg]",
         "fastapi[standard]",
     )
@@ -63,7 +63,7 @@ class I2V:
         from transformers import SiglipImageProcessor, SiglipVisionModel
 
         transformer = HunyuanVideoFramepackTransformer3DModel.from_pretrained(
-            "lllyasviel/FramePackI2V_HY", torch_dtype=torch.float16
+            "lllyasviel/FramePackI2V_HY", torch_dtype=torch.bfloat16
         )
         feature_extractor = SiglipImageProcessor.from_pretrained(
             "lllyasviel/flux_redux_bfl", subfolder="feature_extractor"
@@ -160,7 +160,7 @@ class Interpolate:
         from transformers import SiglipImageProcessor, SiglipVisionModel
 
         transformer = HunyuanVideoFramepackTransformer3DModel.from_pretrained(
-            "lllyasviel/FramePackI2V_HY", torch_dtype=torch.float16
+            "lllyasviel/FramePackI2V_HY", torch_dtype=torch.bfloat16
         )
         feature_extractor = SiglipImageProcessor.from_pretrained(
             "lllyasviel/flux_redux_bfl", subfolder="feature_extractor"

@@ -10,4 +10,4 @@ images/
 videos/
 output_videos/
 .venv
-examples/quick_start.py
+examples/

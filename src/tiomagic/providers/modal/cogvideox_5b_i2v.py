@@ -99,7 +99,7 @@ class I2V:
             image = load_image_robust(image)
             data['image'] = image
             if 'height' not in data and 'width' not in data:
-                data = extract_image_dimensions(image, data)
+                print("--> Warning: This model only supports 720 x 480 resolution")
         except Exception as e:
             raise ProcessingError(
                 media_type="image",

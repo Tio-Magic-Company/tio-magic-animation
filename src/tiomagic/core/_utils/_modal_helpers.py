@@ -40,7 +40,7 @@ def check_status(app_name: str) -> Dict[str, Any]:
 def get_endpoints(app) -> list[str]:
     # maybe check responsiveness of endpoints here
     endpoints = app.registered_web_endpoints
-    print('ENDPOINTS: ', endpoints)
+    print('--> ENDPOINTS: ', endpoints)
     return endpoints
 
 def check_modal_app_deployment(app, app_name) -> Dict[str, Any]:
@@ -65,10 +65,10 @@ def check_modal_app_deployment(app, app_name) -> Dict[str, Any]:
         deployment_status = check_status(app_name)
         print("deployment status: f", deployment_status)
         if not deployment_status['deployed']:
-            print("app is NOT deployed, deploying now")
+            print("--> app is NOT deployed, deploying now. This may take a few minutes if it's the first time you are loading this model.")
             app.deploy()
         else:
-            print("app is already deployed")
+            print("--> app is already deployed")
         result['success'] = True
         result['endpoints'] = get_endpoints(app)
         return result
@@ -104,12 +104,13 @@ def load_image_robust(image_source):
     import base64
     from io import BytesIO
     import PIL.Image
+    import numpy as np
 
     try:
         # Check if it's a web URL
         if isinstance(image_source, str) and image_source.startswith(('http://', 'https://')):
             print(f"Loading image from URL: {image_source}")
-            return load_image(image_source)
+            image = load_image(image_source)
 
         # Check if it's a base64 string
         elif isinstance(image_source, str) and image_source.startswith('data:image'):
@@ -122,16 +123,31 @@ def load_image_robust(image_source):
 
             image_data = base64.b64decode(base64_str)
             image = PIL.Image.open(BytesIO(image_data)).convert('RGB')
-            return image
+            # return image
 
         # Check if it's a local file path (for Modal container)
         elif isinstance(image_source, str) and os.path.exists(image_source):
             print(f"Loading image from local path: {image_source}")
-            return load_image(image_source)
+            image = load_image(image_source)
 
         else:
             raise ValueError(f"Unsupported image source format: {type(image_source)}")
-
+        
+        # Add validation after loading
+        if hasattr(image, 'convert'):
+            image = image.convert('RGB')
+        
+        # Convert to numpy array for validation
+        img_array = np.array(image)
+        
+        # Check for invalid values
+        if np.any(np.isnan(img_array)) or np.any(np.isinf(img_array)):
+            print("Warning: Image contains invalid values (NaN/Inf), attempting to clean...")
+            # Replace NaN with 0 and Inf with max value
+            img_array = np.nan_to_num(img_array, nan=0.0, posinf=255.0, neginf=0.0)
+            image = PIL.Image.fromarray(img_array.astype(np.uint8))
+        
+        return image
     except Exception as e:
         print(f"Error loading image from {image_source}: {e}")
         raise

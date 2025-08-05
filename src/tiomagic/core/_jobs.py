@@ -83,7 +83,6 @@ class Job:
     def get_job(cls, job_id: str) -> Optional['Job']:
         """Get a job by ID."""
         jobs = cls.load_all_jobs()
-        print("job that we are returning, ", jobs.get(job_id))
         return jobs.get(job_id)
 
     @classmethod

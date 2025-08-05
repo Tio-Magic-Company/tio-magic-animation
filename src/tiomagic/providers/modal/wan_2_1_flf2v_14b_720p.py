@@ -161,7 +161,7 @@ class Interpolate:
             data['first_frame'] = first_frame
             data['last_frame'] = last_frame
             if 'height' not in data and 'width' not in data:
-                data = extract_image_dimensions(image, data)         
+                data = extract_image_dimensions(first_frame, data)
         except Exception as e:
             raise ProcessingError(
                 media_type="image",

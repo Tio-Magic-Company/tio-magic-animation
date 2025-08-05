@@ -19,26 +19,33 @@ OUTPUTS_NAME = f'{APP_NAME}-outputs'
 OUTPUTS_PATH = "/outputs"
 
 MODEL_ID = "Lightricks/LTX-Video"
+MODEL_REVISION_ID = "a6d59ee37c13c58261aa79027d3e41cd41960925"
+
 
 GPU_CONFIG: GPUType = GPUType.A100_80GB
 TIMEOUT: int = 1800 # 30 minutes
 SCALEDOWN_WINDOW: int = 900 # 15 minutes
 
 image = (
-    modal.Image.debian_slim(python_version="3.11")
+    modal.Image.debian_slim(python_version="3.12")
     .apt_install("git")
+    .apt_install("python3-opencv")
     .pip_install(
-        "accelerate==1.6.0",
-        "diffusers==0.33.1",
-        "hf_transfer==0.1.9",
+        "accelerate==1.4.0",
+        "diffusers==0.32.2",
+        "fastapi[standard]==0.115.8",
+        "huggingface-hub[hf_transfer]==0.29.1",
         "imageio==2.37.0",
-        "imageio-ffmpeg==0.5.1",
+        "imageio-ffmpeg==0.6.0",
+        "opencv-python==4.11.0.86",
+        "pillow==11.1.0",
         "sentencepiece==0.2.0",
-        "torch==2.7.0",
-        "transformers==4.51.3",
+        "torch==2.6.0",
+        "torchvision==0.21.0",
+        "transformers==4.49.0",
         "fastapi[standard]"
     )
-    .env({"HF_HUB_CACHE": CACHE_PATH, "TOKENIZERS_PARALLELISM": "false"})
+    .env({"HF_HUB_CACHE": CACHE_PATH, "TOKENIZERS_PARALLELISM": "false", "HF_HUB_ENABLE_HF_TRANSFER": "1"})
 )
 
 cache_volume = modal.Volume.from_name(CACHE_NAME, create_if_missing=True)
@@ -60,7 +67,11 @@ class I2V:
         from diffusers import LTXImageToVideoPipeline
 
         print("loading models...")
-        self.pipe = LTXImageToVideoPipeline.from_pretrained(MODEL_ID, torch_dtype=torch.bfloat16)
+        self.pipe = LTXImageToVideoPipeline.from_pretrained(
+            MODEL_ID,
+            revision=MODEL_REVISION_ID,
+            torch_dtype=torch.bfloat16,
+        )
         self.pipe.to("cuda")
 
         print('models loaded')
@@ -74,13 +85,14 @@ class I2V:
             print("Pipeline execution finished.")
 
             timestamp = create_timestamp()
-            mp4_name = f"{APP_NAME}-output_{timestamp}.mp4"
+            mp4_name = f"{APP_NAME}-i2v-output_{timestamp}.mp4"
             mp4_path = Path(OUTPUTS_PATH) / mp4_name
             export_to_video(output_frames, str(mp4_path))
             outputs_volume.commit()
 
             with open(mp4_path, "rb") as f:
                 video_bytes = f.read()
+
             return video_bytes
         except Exception as e:
             raise GenerationError(app_name=APP_NAME,

@@ -13,6 +13,14 @@ from ...core.errors import (
     DeploymentError
 )
 
+"""Configuration Section.
+    - Defines
+        - Modal app name
+        - model ID from HuggingFace
+        - cache path to store model data on Modal Volume
+        - outputs path to store video outputs on Modal Volume
+        - GPU requirements
+"""
 VOLUME_NAME = "test-wan-2.1-t2v-14b-cache"
 CACHE_PATH = "/cache" 
 MODEL_ID = "Wan-AI/Wan2.1-T2V-14B-Diffusers"
@@ -24,6 +32,10 @@ GPU_CONFIG: GPUType = GPUType.A100_80GB
 TIMEOUT: int = 1800 # 30 minutes
 SCALEDOWN_WINDOW: int = 900 # 15 minutes
 
+"""Modal Image Definition.
+    - Creates a container image with all required depencies (requirements.txt)
+    - This image is cached and reused across function calls
+"""
 image = (
     modal.Image.debian_slim(python_version="3.11")
     .apt_install("git")
@@ -152,6 +164,9 @@ class T2V:
     @modal.method()
     def generate(self, data: Dict[str, Any]):
         """This method runs the text-to-video generation on an existing container.
+        Executes the actual video generating using the loaded pipeline.
+        Saves the generated video to Modal's volume storage.
+        Returns the video as bytes.
         """
         from diffusers.utils import export_to_video
 
@@ -169,15 +184,38 @@ class T2V:
             video_bytes = f.read()
 
         return video_bytes
+    @staticmethod
+    def handle_web_inference(data: dict):
+        """Creates a Modal instance and spawns async job
+        Returns immediately with call_id, stored for user"""
+        # Create T2V instance and call generate
+        try:
+            t2v_instance = T2V()
+            call = t2v_instance.generate.spawn(data)
+        except Exception as e:
+            raise DeploymentError(
+                service="modal",
+                reason=f"Failed to spawn T2V job: {str(e)}",
+                app_name=APP_NAME
+            )
+
+        return JSONResponse({"call_id": call.object_id, "feature_type": FeatureType.TEXT_TO_VIDEO})
+    
 
 class Wan21TextToVideo14B(ModalProviderBase):
     def __init__(self, api_key=None):
+        """Initializes the local client that will communicate with Modal.
+        Sets references to the Modal app and class names
+        """
         super().__init__(api_key)
         self.app_name = APP_NAME
         self.modal_app = app
         self.modal_class_name = "T2V"
     def _prepare_payload(self, required_args, **kwargs) -> Dict[str, Any]:
-        """Prepare payload specific to Wan2.1 model."""
+        """Prepares the data to send to Modal, specific to this model.
+        Adds the feature_type field for routing.
+        Inherits base validation from parent class
+        """
         payload = super()._prepare_payload(required_args, **kwargs)
 
         # Add feature_type for routing
@@ -300,11 +338,16 @@ class Wan2114bTextToVideoFusionX(ModalProviderBase):
         return payload
 
 class WebAPI(GenericWebAPI):
+    """Establishes features this model handles"""
     feature_handlers = {
         FeatureType.TEXT_TO_VIDEO: T2V
     }
     @modal.fastapi_endpoint(method="POST")
     def web_inference(self, data: dict = Body(...)):
+        """Only implemented for models with LoRAs.
+        Routing to LoRA-variant of model
+        """
+
         feature_type = data.pop("feature_type", None)
         model = data.pop("model", None)  # Extract model from data
         if not feature_type:
@@ -321,7 +364,8 @@ class WebAPI(GenericWebAPI):
             # Route to default handler
             handler_class = self.feature_handlers[feature_type]
             return handler_class.handle_web_inference(data)
-        
+
+"""Transforms the WebAPI class into a Modal-compatible class"""
 WebAPI = app.cls(
     image=image,
     gpu=GPU_CONFIG,
@@ -331,7 +375,9 @@ WebAPI = app.cls(
     scaledown_window=SCALEDOWN_WINDOW,
 )(WebAPI)
 
-# Register with the system registry
+"""Links the feature/model/provider combination to the implementation class.
+Essential to user access to model and its feature(s)
+"""
 registry.register(
     feature=FeatureType.TEXT_TO_VIDEO,
     model="wan2.1-t2v-14b",
