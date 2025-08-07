@@ -1,0 +1,13 @@
+title: Tio Magic Animation Toolkit
+description: Tio Magic Animation Toolkit is designed to simplify the use of video AI models for animation. The Animation Toolkit empowers animators, developers, and AI enthusiasts to easily generate animated videos without the pain of complex technical setup, local hardware limitations, and haphazard documentation.
+
+# Navigation menu
+navigation:
+  - title: Intro
+    url: /
+  - title: Getting Started
+    url: /getting-started
+  - title: Contributing
+    url: /contributing
+  - title: Parameter Documentation
+    url: /parameter-documentation

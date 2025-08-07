@@ -1,3 +1,8 @@
+---
+layout: default
+title: Tio Magic Animation Toolkit
+---
+
 # Tio Magic Animation Toolkit
 
 Tio Magic Animation Toolkit is designed to simplify the use of video AI models for animation. The Animation Toolkit empowers animators, developers, and AI enthusiasts to easily generate animated videos without the pain of complex technical setup, local hardware limitations, and haphazard documentation.
@@ -9,192 +14,64 @@ Tio Magic Animation Toolkit is designed to simplify the use of video AI models f
 - Pose Guidance
 
 ## Supported Providers and Models
+## Local
+### Image to Video
+- [Luma AI Ray 2](https://lumalabs.ai/ray)
+- [Google Deepmind Veo 2](https://deepmind.google/models/veo/)
 
-### Local
-- Veo 2.0: veo-2.0-generate-001
+### Interpolate
+- [Luma AI Ray 2](https://lumalabs.ai/ray)
 
-### Modal
-- Wan 2.1 14b: wan2.1-t2v-14b
-- Wan 2.1 FLFV 14b: wan2.1-flf2v-14b-720p
-- Wan 2.1 I2V 14b 720p: wan2.1-i2v-14b-720p
-- Wan 2.1 Vace 14b: wan2.1-vace-14b
-- LTX video: ltx-video
-- Framepack I2V HY: framepack-i2v-hy
-- Cogvideox 5b: cogvideox-5b
-- Cogvideox 5b I2V: cogvideox-5b-image-to-video
+## Modal
+### Image to Video
+- [Cogvideox 5b I2V](https://huggingface.co/zai-org/CogVideoX-5b-I2V)
+- [Framepack I2V HY](https://github.com/lllyasviel/FramePack)
+- [LTX video](https://huggingface.co/Lightricks/LTX-Video)
+- [Pusa V1](https://huggingface.co/RaphaelLiu/PusaV1)
+- [Wan 2.1 I2V 14b 720p](https://huggingface.co/Wan-AI/Wan2.1-I2V-14B-720P)
+- [Wan 2.1 Vace 14b](https://huggingface.co/Wan-AI/Wan2.1-VACE-14B)
+- [Wan 2.1 I2V FusionX (LoRA)](https://huggingface.co/vrgamedevgirl84/Wan14BT2VFusioniX)
 
-## Getting Started - Installation
+### Interpolate
+- [Framepack I2V HY](https://github.com/lllyasviel/FramePack)
+- [Wan 2.1 FLFV 14b](https://huggingface.co/Wan-AI/Wan2.1-FLF2V-14B-720P)
+- [Wan 2.1 Vace 14b](https://huggingface.co/Wan-AI/Wan2.1-VACE-14B)
 
-> **Note:** In the future, installation will be available via `pip install`
+### Pose Guidance
+- [Wan 2.1 Vace 14b](https://huggingface.co/Wan-AI/Wan2.1-VACE-14B)
 
-1. Open your Command Line Interface (CLI) - terminal on Mac or command prompt on Windows
+### Text to Video
+- [Cogvideox 5b](https://huggingface.co/zai-org/CogVideoX-5b)
+- [Pusa V1](https://huggingface.co/RaphaelLiu/PusaV1)
+- [Wan 2.1 T2V FantomX (LoRA)](https://huggingface.co/vrgamedevgirl84/Wan14BT2VFusioniX)
+- [Wan 2.1 14b](https://huggingface.co/Wan-AI/Wan2.1-T2V-14B)
+- [Wan 2.1 Vace 14b](https://huggingface.co/Wan-AI/Wan2.1-VACE-14B)
+- [Wan 2.1 PhantomX (LoRA)](https://huggingface.co/vrgamedevgirl84/Wan14BT2VFusioniX)
 
-2. Download Python:
-   ```bash
-   sudo apt install python3
-   ```
+# Sample Outputs
+<style>
+.gif-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+  padding: 20px;
+}
 
-3. Install Pip (Python's package manager):
-   ```bash
-   sudo apt install python3-pip
-   ```
+.gif-grid img {
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+</style>
 
-4. Clone this repository to a local directory
-
-5. Change directories to the location where you cloned your repository:
-   ```bash
-   cd /path/to/repository
-   ```
-
-6. Create a virtual environment:
-   ```bash
-   python3 -m venv venv
-   ```
-
-7. Activate the virtual environment (you should see `(venv)` on your command line):
-   - **On MacOS/Linux:**
-     ```bash
-     source venv/bin/activate
-     ```
-   - **On Windows Command Prompt:**
-     ```cmd
-     venv\Scripts\activate
-     ```
-
-8. Install the package:
-   ```bash
-   pip install -e .
-   ```
-   > **Important:** Don't forget the DOT!
-
-9. Create a `.env` file at the root of your local repository. Depending on what provider(s) you are using, copy/paste the appropriate access keys to the `.env` file in the repository:
-   - **Veo 2:** `GOOGLE_API_KEY`
-   - **Modal:** `MODAL_TOKEN_ID` and `MODAL_TOKEN_SECRET`
-
-10. Navigate to `quick_start.py`, configure the file to your needs (see examples below), and run:
-    ```bash
-    python3 quick_start.py
-    ```
-
-11. When you are done developing, run `deactivate` to exit the virtual environment
-
-## Getting Started - Usage
-
-Move to the directory where `quick_start.py` is located and run:
-```bash
-python3 quick_start.py
-```
-
-### Example Usage
-
-```python
-from tiomagic import tm
-from dotenv import load_dotenv
-
-def run_image_to_video():
-    tm.configure(provider="provider")
-    
-    image = "/local/path/to/image"
-    prompt = "this is the text prompt used in video generation"
-    negative_prompt = "blurry, low quality, getty"
-    
-    required_args = {
-        "prompt": prompt,
-        "image": image
-    }
-    optional_args = {
-        "negative_prompt": negative_prompt
-    }
-
-    tm.image_to_video(model="model-name", required_args=required_args, **optional_args)
-
-def check_status(job_id: str):
-    # updates generation_log.json
-    tm.check_generation_status(job_id)
-
-if __name__ == "__main__":
-    load_dotenv()
-    
-    run_image_to_video()
-
-    # job_id = "..."
-    # check_status(job_id)
-```
-
-## Local Models
-
-### Veo 2.0 Generate 001
-
-Ensure you have a `GOOGLE_API_KEY` and you have sufficient credits for the number of videos you want to create. Paste your key into `.env`.
-
-```python
-from tiomagic import tm
-from dotenv import load_dotenv
-
-def veo_image_to_video():
-    tm.configure(provider="local")
-
-    required_args = {
-        "prompt": "prompt for video",
-        "image": "https:// url or local path to image",
-    }
-    optional_args = {
-        # ...
-    }
-
-    tm.image_to_video(model="veo-2.0-generate-001", required_args=required_args, **optional_args)
-
-    return
-```
-
-> **NOTE:** Veo 2.0 does NOT have an asynchronous method of running. You must wait for the function to complete. Once the function finishes, your video will be under directory `output_videos`
-
-## Modal Models
-
-Ensure that you have a `MODAL_TOKEN_ID` and `MODAL_TOKEN_SECRET` in your `.env` file. You can create one on your Modal dashboard or via Modal CLI.
-
-Depending on the model and feature you use, ensure that your required and optional arguments match the name and type that the model is looking for. You can find these requirements under `/core/schemas`.
-
-```python
-from tiomagic import tm
-from dotenv import load_dotenv
-
-def interpolate_example():
-    tm.configure(provider="modal")
-    
-    required_args = {
-        'first_frame': 'URL or Local path to first frame image',
-        'last_frame': 'URL or Local path to last frame image',
-        'prompt': "Cartoon styled painter Bob ross painting a tree on his canvas, then turns towards the camera and smiles to the audience."
-    }
-
-    optional_args = {
-        # ...
-    }
-
-    tm.interpolate(model="wan2.1-vace-14b", required_args=required_args, **optional_args)
-
-def check_status(job_id: str):
-    # updates generation_log.json
-    tm.check_generation_status(job_id)
-
-if __name__ == "__main__":
-    load_dotenv()
-    interpolate_example()  # run interpolate function once, output in generation_log.json
-
-    # job_id = "..."
-    # check_status(job_id)  # run check status on job
-```
-
-In the directory of your file, run:
-```bash
-python3 'file_name.py'
-```
-
-Once you successfully run a feature call on Modal, the job will show up in `generation_log.json`. You can check the job's status by running `check_status`.
-
-Occasionally check on the status of the job. Once it is completed on Modal, running `check_status` will download the resulting video into the `output_videos` directory in your local repository. You can also find the output video on your Modal dashboard.
-
-## How to Contribute
-
-*(Content for How to Contribute section to be added)*
+<div class="gif-grid">
+  <img src="https://storage.googleapis.com/tm-animation-public-examples/t2v/penguin_t2v_phantomfusionx.gif" alt="Video 1">
+  <img src="video2.gif" alt="Video 2">
+  <img src="video3.gif" alt="Video 3">
+  <img src="video4.gif" alt="Video 4">
+  <img src="video5.gif" alt="Video 5">
+  <img src="video6.gif" alt="Video 6">
+  <img src="video7.gif" alt="Video 7">
+  <img src="video8.gif" alt="Video 8">
+</div>

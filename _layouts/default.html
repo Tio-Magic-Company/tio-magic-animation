@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ page.title }} - {{ site.title }}</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+      line-height: 1.6;
+      color: #24292e;
+    }
+    
+    .nav-bar {
+      background-color: #24292e;
+      padding: 16px 0;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .nav-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .nav-title {
+      color: #ffffff;
+      font-size: 20px;
+      font-weight: 600;
+      text-decoration: none;
+    }
+    
+    .nav-menu {
+      display: flex;
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      gap: 10px;
+    }
+    
+    .nav-menu a {
+      color: #ffffff;
+      text-decoration: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      transition: background-color 0.2s;
+    }
+    
+    .nav-menu a:hover {
+      background-color: rgba(255,255,255,0.1);
+    }
+    
+    .nav-menu a.active {
+      background-color: #0366d6;
+    }
+    
+    .main-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .nav-container {
+        flex-direction: column;
+        gap: 15px;
+      }
+      
+      .nav-menu {
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <nav class="nav-bar">
+    <div class="nav-container">
+      <a href="/" class="nav-title">{{ site.title }}</a>
+      <ul class="nav-menu">
+        {% for item in site.navigation %}
+        <li>
+          <a href="{{ item.url }}" {% if page.url == item.url %}class="active"{% endif %}>
+            {{ item.title }}
+          </a>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+  </nav>
+  
+  <main class="main-content">
+    {{ content }}
+  </main>
+</body>
+</html>
