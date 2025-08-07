@@ -1,6 +1,7 @@
 ---
 layout: default
 title: Getting Started
+permalink: /getting-started
 ---
 
 # Getting Started - Installation
@@ -29,7 +30,7 @@ title: Getting Started
 
 Move to the directory where `quick_start.py` is located and run `python3 quick_start.py`
 
-```python
+```
 from tiomagic import tm
 from dotenv import load_dotenv
 
@@ -62,6 +63,63 @@ if __name__ == "__main__":
     # job_id = "..."
     # check_status(job_id)
 ```
+# Running Modal Models
+
+## How it works
+
+We use Modal because we anticipate that most people do not have the local computing power to boot up multiple video AI models. Modal solves this issue by running everything in their cloud. It does cost money, but Modal gives you a few credits upon registration which you can use to demo this toolkit.
+
+Running a feature call (`tm.text_to_video(model="...", required_params="...")`) makes an API call to Modal, which starts a modal "app", loads a modal "container" that includes all of the files to make an inference call to the requested model, and runs a video generation with the given data.
+
+You can visit your Modal dashboard to track the models you've launched and the requests you've made.
+
+On the most basic plan, Modal only allows you to have 8 web endpoints deployed at a time. Every time you launch a new model, you are deploying 2 web endpoints (POST to run a generation, GET to check its status). If you deploy more than 4 models, you will run into errors running your new models. Please go onto your Modal dashboard, select the model you want to take down, and click **stop app** to deploy new models.
+
+## Development Setup
+
+1. Ensure you have followed the **Getting Started - Installation** instructions above to prepare your local environment
+2. Create a Modal account. You will be given $3.00 of free credits to use, which can run a few video generations, depending on the GPU you select and the complexity of the feature you request to run
+3. Create a Modal key and paste a `MODAL_TOKEN_ID` and `MODAL_TOKEN_SECRET` in your `.env` file. You can create one on your Modal dashboard or via Modal CLI
+
+## Example
+
+Depending on the model and feature you use, ensure that your required and optional arguments match the name and type that the model is looking for. You can find these requirements under `/core/schemas`
+
+```python
+from tiomagic import tm
+from dotenv import load_dotenv
+
+def interpolate_example():
+    tm.configure(provider="modal")
+    
+    required_args = {
+        'first_frame': 'URL or Local path to first frame image',
+        'last_frame': 'URL or Local path to last frame image',
+        'prompt': "Cartoon styled painter Bob ross painting a tree on his canvas, then turns towards the camera and smiles to the audience."
+    }
+    
+    optional_args = {...}
+    
+    tm.interpolate(model="wan2.1-vace-14b", required_args=required_args, **optional_args)
+
+def check_status(job_id: str):
+    # updates generation_log.json
+    tm.check_generation_status(job_id)
+
+if __name__ == "__main__":
+    load_dotenv()
+    interpolate_example() # run interpolate function once, output in generation_log.json
+    
+    # job_id = "..."
+    # check_status(job_id) # run check status on job
+
+# in directory of file, run python3 'file_name.py'
+```
+
+Once you successfully run a feature call on Modal, the job will show up in `generation_log.json`. You can check the job's status by running `check_status`.
+
+Occasionally check on the status of the job. Once it is completed on Modal, running `check_status` will download the resulting video into `output_videos` directory in your local repository. You can also find the output video on your Modal dashboard under "Volumes".
+
 
 # Running Local Models
 
@@ -129,60 +187,3 @@ def luma_image_to_video():
 **NOTES**:
 - Images all must be URLs, they cannot be local images
 - Luma AI API does NOT have an asynchronous method of running. You must wait for the function to complete. Once the function finishes, your video will be under directory `output_videos`
-
-# Running Modal Models
-
-## How it works
-
-We use Modal because we anticipate that most people do not have the local computing power to boot up multiple video AI models. Modal solves this issue by running everything in their cloud. It does cost money, but Modal gives you a few credits upon registration which you can use to demo this toolkit.
-
-Running a feature call (`tm.text_to_video(model="...", required_params="...")`) makes an API call to Modal, which starts an "app", loads a "container" that includes all of the files to make an inference call to the requested model, and runs a video generation with the given data.
-
-You can visit your Modal dashboard to track the models you've launched and the requests you've made.
-
-On the most basic plan, Modal only allows you to have 8 web endpoints deployed at a time. Every time you launch a new model, you are deploying 2 web endpoints (POST to run a generation, GET to check its status). If you deploy more than 4 models, you will run into errors running your new models. Please go onto your Modal dashboard, select the model you want to take down, and click **stop app** to deploy new models.
-
-## Development Setup
-
-1. Ensure you have followed the **Getting Started - Installation** instructions above to prepare your local environment
-2. Create a Modal account. You will be given $3.00 of free credits to use, which can run a few video generations, depending on the GPU you select and the complexity of the feature you request to run
-3. Create a Modal key and paste a `MODAL_TOKEN_ID` and `MODAL_TOKEN_SECRET` in your `.env` file. You can create one on your Modal dashboard or via Modal CLI
-
-## Example
-
-Depending on the model and feature you use, ensure that your required and optional arguments match the name and type that the model is looking for. You can find these requirements under `/core/schemas`
-
-```python
-from tiomagic import tm
-from dotenv import load_dotenv
-
-def interpolate_example():
-    tm.configure(provider="modal")
-    
-    required_args = {
-        'first_frame': 'URL or Local path to first frame image',
-        'last_frame': 'URL or Local path to last frame image',
-        'prompt': "Cartoon styled painter Bob ross painting a tree on his canvas, then turns towards the camera and smiles to the audience."
-    }
-    
-    optional_args = {...}
-    
-    tm.interpolate(model="wan2.1-vace-14b", required_args=required_args, **optional_args)
-
-def check_status(job_id: str):
-    # updates generation_log.json
-    tm.check_generation_status(job_id)
-
-if __name__ == "__main__":
-    load_dotenv()
-    interpolate_example() # run interpolate function once, output in generation_log.json
-    
-    # job_id = "..."
-    # check_status(job_id) # run check status on job
-
-# in directory of file, run python3 'file_name.py'
-```
-
-Once you successfully run a feature call on Modal, the job will show up in `generation_log.json`. You can check the job's status by running `check_status`.
-
-Occasionally check on the status of the job. Once it is completed on Modal, running `check_status` will download the resulting video into `output_videos` directory in your local repository. You can also find the output video on your Modal dashboard under "Volumes".

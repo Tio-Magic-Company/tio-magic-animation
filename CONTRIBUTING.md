@@ -1,6 +1,7 @@
 ---
 layout: default
 title: Contributing
+permalink: /contributing
 ---
 
 # Contributing New Models/Features
@@ -9,7 +10,9 @@ title: Contributing
 
 ### How to add a new model in Modal
 
-> Above is the flow of a feature call. The class and methods outlined in red represent the interface between your local machine and Modal.
+<img src="https://storage.googleapis.com/tm-animation-public-examples/repo-assets/modal_diagram_highlighted.png">
+
+Above is the flow of a feature call. The class and methods outlined in red represent the interface between your local machine and Modal.
 
 Contributing a new model only requires you to create the file that runs code on Modal and returns the user data.
 
