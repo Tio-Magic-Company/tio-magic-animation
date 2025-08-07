@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Parameter Documentation
-permalink: /parameter-documentation
+permalink: ./parameter-documentation
 ---
 
 # Model Parameter Documentation

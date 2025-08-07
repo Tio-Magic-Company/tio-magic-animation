@@ -1,3 +1,9 @@
+---
+layout: default
+title: Intro
+permalink: /
+---
+
 # Tio Magic Animation Toolkit
 
 Tio Magic Animation Toolkit is designed to simplify the use of video AI models for animation. The Animation Toolkit empowers animators, developers, and AI enthusiasts to easily generate animated videos without the pain of complex technical setup, local hardware limitations, and haphazard documentation.
@@ -115,44 +121,3 @@ Tio Magic Animation Toolkit is designed to simplify the use of video AI models f
 
 ### Interpolate
 - [Luma AI Ray 2](https://lumalabs.ai/ray)
-
-<style>
-    .gif-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-    gap: 10px;
-    padding: 10px;
-  }
-
-  .gif-grid figure {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-    gap: 10px;
-    padding: 10px;
-  }
-  
-  .gif-grid img {
-    width: 100%;
-    height: auto;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  }
-  .gif-grid png {
-    width: 100%;
-    height: auto;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  }
-  .gif-grid figcaption {
-    margin-top: 8px;
-    font-size: 14px;
-    color: #333;
-    font-weight: 500;
-    }
-    img {
-        width: 75%;
-        height: auto;
-        border-radius: 8px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-</style>

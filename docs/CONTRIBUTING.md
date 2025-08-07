@@ -1,3 +1,9 @@
+---
+layout: default
+title: Contributing
+permalink: /contributing
+---
+
 # Contributing New Models/Features
 
 ## Contributing New Models/Features on Modal

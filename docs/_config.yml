@@ -4,9 +4,12 @@ baseurl: "/tio-magic-animation"
 url: "https://tio-magic-company.github.io"
 theme: null
 
-readme_index:
-  enabled: true
-  
+sass:
+  sass_dir: assets/css  # No change needed if already relative
+
+source: .
+destination: ./_site
+
 # Navigation menu
 navigation:
   - title: Intro
