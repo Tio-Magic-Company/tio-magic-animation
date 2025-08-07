@@ -1,6 +1,7 @@
 ---
 layout: default
-title: Tio Magic Animation Toolkit
+title: intro
+permalink: /
 ---
 
 # Tio Magic Animation Toolkit
