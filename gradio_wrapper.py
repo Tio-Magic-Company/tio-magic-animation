@@ -629,7 +629,7 @@ with gr.Blocks(title="Tio Magic Animation Toolkit") as demo:
                                 
                                 # Return the result
                                 if isinstance(result, str) and os.path.exists(result):
-                                    return result, f"✅ Video generated successfully!"
+                                    return result, "✅ Video generated successfully!"
                                 else:
                                     return None, f"📋 Job submitted: {result}"
                             except ValueError as ve:

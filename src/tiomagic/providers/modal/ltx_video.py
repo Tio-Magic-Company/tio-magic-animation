@@ -90,7 +90,6 @@ class I2V:
     @modal.method()
     def generate(self, data: Dict[str, Any]):
         import torch
-        from diffusers.utils import export_to_video
         from diffusers.pipelines.ltx.pipeline_ltx_condition import LTXVideoCondition
         from diffusers.utils import export_to_video, load_video
 
