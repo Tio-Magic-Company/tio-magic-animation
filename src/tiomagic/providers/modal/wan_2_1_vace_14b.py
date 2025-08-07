@@ -25,7 +25,7 @@ OUTPUTS_PATH = "/outputs"
 VACE_MODEL_ID = "Wan-AI/Wan2.1-VACE-14B-diffusers"
 
 GPU_CONFIG: GPUType = GPUType.A100_80GB
-TIMEOUT: int = 1800 # 30 minutes
+TIMEOUT: int = 2700 # 30 minutes
 SCALEDOWN_WINDOW: int = 900 # 15 minutes
 
 image = (

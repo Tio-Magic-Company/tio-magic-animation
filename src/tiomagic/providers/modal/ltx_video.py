@@ -2,6 +2,8 @@ import modal
 from pathlib import Path
 from fastapi.responses import JSONResponse
 
+from ...core.schemas import FEATURE_SCHEMAS
+
 from .base import GPUType, GenericWebAPI, ModalProviderBase
 from typing import Any, Dict
 from ...core.registry import registry
@@ -18,7 +20,11 @@ CACHE_PATH = "/cache"
 OUTPUTS_NAME = f'{APP_NAME}-outputs'
 OUTPUTS_PATH = "/outputs"
 
-MODEL_ID = "Lightricks/LTX-Video"
+# MODEL_ID = "Lightricks/LTX-Video"
+# MODEL_ID = "Lightricks/LTX-Video-0.9.8-13B-distilled"
+MODEL_ID = "Lightricks/LTX-Video-0.9.7-dev"
+MODEL_UPSCALER = "Lightricks/ltxv-spatial-upscaler-0.9.7"
+
 MODEL_REVISION_ID = "a6d59ee37c13c58261aa79027d3e41cd41960925"
 
 
@@ -31,18 +37,17 @@ image = (
     .apt_install("git")
     .apt_install("python3-opencv")
     .pip_install(
-        "accelerate==1.4.0",
-        "diffusers==0.32.2",
-        "fastapi[standard]==0.115.8",
-        "huggingface-hub[hf_transfer]==0.29.1",
-        "imageio==2.37.0",
-        "imageio-ffmpeg==0.6.0",
-        "opencv-python==4.11.0.86",
-        "pillow==11.1.0",
-        "sentencepiece==0.2.0",
-        "torch==2.6.0",
-        "torchvision==0.21.0",
-        "transformers==4.49.0",
+        "accelerate",
+        "git+https://github.com/huggingface/diffusers.git",
+        "huggingface-hub[hf_transfer]",
+        "imageio",
+        "imageio-ffmpeg",
+        "opencv-python",
+        "pillow",
+        "sentencepiece",
+        "torch",
+        "torchvision",
+        "transformers",
         "fastapi[standard]"
     )
     .env({"HF_HUB_CACHE": CACHE_PATH, "TOKENIZERS_PARALLELISM": "false", "HF_HUB_ENABLE_HF_TRANSFER": "1"})
@@ -64,24 +69,89 @@ class I2V:
     @modal.enter()
     def load_models(self):
         import torch
-        from diffusers import LTXImageToVideoPipeline
+        from diffusers import LTXConditionPipeline, LTXLatentUpsamplePipeline
+#             revision=MODEL_REVISION_ID,
 
         print("loading models...")
-        self.pipe = LTXImageToVideoPipeline.from_pretrained(
+        self.pipe = LTXConditionPipeline.from_pretrained(
             MODEL_ID,
-            revision=MODEL_REVISION_ID,
             torch_dtype=torch.bfloat16,
         )
+        self.pipe_upsample = LTXLatentUpsamplePipeline.from_pretrained(
+            MODEL_UPSCALER, 
+            vae=self.pipe.vae, 
+            torch_dtype=torch.bfloat16)
+
         self.pipe.to("cuda")
+        self.pipe_upsample.to("cuda")
+        self.pipe.vae.enable_tiling()
 
         print('models loaded')
     @modal.method()
     def generate(self, data: Dict[str, Any]):
+        import torch
         from diffusers.utils import export_to_video
+        from diffusers.pipelines.ltx.pipeline_ltx_condition import LTXVideoCondition
+        from diffusers.utils import export_to_video, load_video
 
         try:
             print("Starting video generation process...")
-            output_frames = self.pipe(**data).frames[0]
+            #  compress image to video
+            video = load_video(export_to_video([data['image']]))
+            condition1 = LTXVideoCondition(video=video, frame_index=0)
+            downscale_factor = 2/3
+
+            prompt = data.get('prompt')
+            negative_prompt = data.get('negative_prompt')
+            num_frames = data.get('num_frames')
+            num_inference_steps = data.get('num_inference_steps')
+            expected_width = data.get('width')
+            expected_height = data.get('height')
+
+            # generate video at smaller resolution
+            downscaled_height, downscaled_width = int(expected_height * downscale_factor), int(expected_width * downscale_factor)
+            downscaled_height, downscaled_width = self.round_to_nearest_resolution_acceptable_by_vae(downscaled_height, downscaled_width)
+            latents = self.pipe(
+                conditions=[condition1],
+                width=downscaled_width,
+                height=downscaled_height,
+                prompt=prompt,
+                negative_prompt = negative_prompt,
+                num_frames = num_frames,
+                num_inference_steps = num_inference_steps,
+                generator=torch.Generator().manual_seed(0),
+                output_type="latent"
+            ).frames
+
+            # upscale generated video using latent upsampler with fewer inference steps
+            # the available latent upsampler upscales the height/width by 2x
+            upscaled_height, upscaled_width = downscaled_height * 2, downscaled_width * 2
+            upscaled_latents = self.pipe_upsample(
+                latents=latents,
+                output_type="latent"
+            ).frames
+
+            # denoise the upscaled video with few steps to improve texture
+            video = self.pipe(
+                conditions=[condition1],
+                prompt=prompt,
+                negative_prompt=negative_prompt,
+                width=upscaled_width,
+                height=upscaled_height,
+                num_frames=num_frames,
+                denoise_strength=0.4,  # Effectively, 4 inference steps out of 10
+                num_inference_steps=10,
+                latents=upscaled_latents,
+                decode_timestep=0.05,
+                image_cond_noise_scale=0.025,
+                generator=torch.Generator().manual_seed(0),
+                output_type="pil",
+            ).frames[0]
+            
+            # downscale video to expected resolution
+            output_frames = [frame.resize((expected_width, expected_height)) for frame in video]
+            
+            # output_frames = self.pipe(**data).frames[0]
             print("Pipeline execution finished.")
 
             timestamp = create_timestamp()
@@ -100,6 +170,10 @@ class I2V:
                                   feature = FeatureType.IMAGE_TO_VIDEO,
                                   reason=str(e),
                                   generation_params=data,)
+    def round_to_nearest_resolution_acceptable_by_vae(self, height, width):
+        height = height - (height % self.pipe.vae_spatial_compression_ratio)
+        width = width - (width % self.pipe.vae_spatial_compression_ratio)
+        return height, width
     @staticmethod
     def handle_web_inference(data: dict[str, Any]):
         image = data.get("image")
@@ -109,6 +183,7 @@ class I2V:
             data['image'] = image
             if 'height' not in data and 'width' not in data:
                 data = extract_image_dimensions(image, data)
+
         except Exception as e:
             raise ProcessingError(
                 media_type="image",
@@ -138,6 +213,14 @@ class LTXVideoImageToVideo(ModalProviderBase):
         """Prepare payload specific to Image-to-Video model."""
         payload = super()._prepare_payload(required_args, **kwargs)
         payload["feature_type"] = FeatureType.IMAGE_TO_VIDEO
+
+        i2v_schema = FEATURE_SCHEMAS[FeatureType.IMAGE_TO_VIDEO]['ltx-video']
+        payload['negative_prompt'] = payload.get('negative_prompt', "")
+        payload['num_frames'] = payload.get('num_frames', i2v_schema["optional"]["num_frames"]["default"])
+        payload['num_inference_steps'] = payload.get('num_inference_steps', i2v_schema["optional"]["num_inference_steps"]["default"])
+        payload['width'] = payload.get('width', i2v_schema["optional"]["width"]["default"])
+        payload['height'] = payload.get('height', i2v_schema["optional"]["height"]["default"])
+
 
         if is_local_path(payload['image']):
             payload['image'] = local_image_to_base64(payload['image'])

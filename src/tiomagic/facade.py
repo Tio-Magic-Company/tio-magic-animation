@@ -27,6 +27,8 @@ Attributes:
 """
 from typing import Any, Dict
 from uuid import uuid4
+
+from .core.schemas import FEATURE_SCHEMAS
 from .core.registry import registry
 from .core.config import Configuration
 from .core._jobs import Job, JobStatus
@@ -325,7 +327,7 @@ class TioMagic:
 
         return job
 
-    def check_generation_status(self, job_id):
+    def check_generation_status(self, job_id, returnJob = False):
         """Check the current status of a video generation job.
         
         Queries the provider for the current status of a running job and updates
@@ -357,6 +359,10 @@ class TioMagic:
                 job.check_status(lambda: implementation.check_generation_status(job.generation))
                 job.update(last_updated= create_timestamp())
                 # checks generation status and updates generation_log.json
+                if returnJob:
+                    return job
+                else:
+                    return
 
             except (UnknownModelError, UnknownProviderError):
                 raise
@@ -417,6 +423,16 @@ class TioMagic:
                 reason="Job has no active generation to cancel"
             )
         
+    def get_providers(self):
+        """List all providers available."""
+        return registry.get_providers()
+    def get_models(self, feature, provider):
+        """List all models available for a provider and feature"""
+        return registry.get_models(feature=feature, provider=provider)
+    def get_schema(self, feature, model):
+        """List schema for particular implementation"""
+        schema = FEATURE_SCHEMAS[feature][model]
+        return schema
     def list_implementations(self):
         """List all implementations available
         Models listed and sorted by provider or feature

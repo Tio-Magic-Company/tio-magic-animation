@@ -26,10 +26,14 @@ dependencies = [
     # Local and base dependencies
     "fastapi[standard]",
     "google-genai",
+    "lumaai",
     "pillow",
     "numpy",
     "python-dotenv",
     "requests",
+    # Dependency for GUI
+    "gradio_client", 
+    "gradio",
     # Dependencies only needed for Modal deployments
     "modal",
     "torch>=2.5.0",
