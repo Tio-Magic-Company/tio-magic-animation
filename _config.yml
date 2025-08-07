@@ -3,7 +3,6 @@ description: Tio Magic Animation Toolkit is designed to simplify the use of vide
 
 readme_index:
   enabled: true
-  remove_originals: false
   
 # Navigation menu
 navigation:
