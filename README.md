@@ -1,6 +1,6 @@
 ---
 layout: default
-title: intro
+title: Intro
 permalink: /
 ---
 
