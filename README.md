@@ -104,6 +104,32 @@ This toolkit leverages <a href="https://modal.com/" target="_blank">Modal</a> fo
   </tr>
 </table>
 
+## Usage
+Go to <a href="https://tio-magic-company.github.io/tio-magic-animation/getting-started" target="_blank">Tio Magic Animation Toolkit Docs</a> for detailed information on usage.
+#### Environment Preparation
+First, create a virtual environment and activate it.
+```
+python3 -m venv venv
+source venv/bin/activate # on MacOS/Linux
+venv/Scripts/activate # on Windows Command Prompt
+```
+Then, install Python packages:
+```
+pip install -e .
+```
+Then, create a .env file. Depending on what provider(s) you are using, copy/pase appropriate access keys to the .env file. For starters, we recommend registering for a Modal account and create an access token:
+```
+MODAL_TOKEN_ID=...
+MODAL_TOKEN_SECRET=...
+```
+Create a Hugging Face account and add the token to your Modal account (this is needed to access open source models)
+
+
+## How to Run Modal Demo 
+```
+python quick_start.py
+```
+
 ## Supported Providers and Models
 
 ## Modal
