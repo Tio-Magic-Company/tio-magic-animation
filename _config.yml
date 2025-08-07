@@ -1,5 +1,7 @@
+theme: minima
 title: Tio Magic Animation Toolkit
 description: Tio Magic Animation Toolkit is designed to simplify the use of video AI models for animation. The Animation Toolkit empowers animators, developers, and AI enthusiasts to easily generate animated videos without the pain of complex technical setup, local hardware limitations, and haphazard documentation.
+
 
 readme_index:
   enabled: true
@@ -15,5 +17,31 @@ navigation:
   - title: Parameter Documentation
     url: /parameter-documentation
 
-include:
-  - README.md
+exclude:
+  - .github/
+  - .ruff_cache/
+  - examples/
+  - images/
+  - output_videos/
+  - src/
+  - venv/
+  - videos/
+  - .env
+  - .gitignore
+  - generation_log.json
+  - gradio_wrapper.py
+  - LICENSE
+  - pyproject.toml
+
+markdown: kramdown
+kramdown:
+  input: GFM  # GitHub Flavored Markdown
+  hard_wrap: false
+  auto_ids: true
+  footnote_nr: 1
+  entity_output: as_char
+  toc_levels: 1..6
+  smart_quotes: lsquo,rsquo,ldquo,rdquo
+  enable_coderay: false
+
+permalink: pretty
