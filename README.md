@@ -1,11 +1,12 @@
-<div align="center">
+
 # Tio Magic Animation Toolkit
 
 [![Website](https://img.shields.io/badge/Website-Tio_Magic-181717?logo=google-chrome)](https://tiomagic.com/)
 [![Documentation](https://img.shields.io/badge/Documentation-GitHub%20Pages-green?logo=github)](https://tio-magic-company.github.io/tio-magic-animation/)
 
 Tio Magic Animation Toolkit is designed to simplify the use of video AI models for animation. The Animation Toolkit empowers animators, developers, and AI enthusiasts to easily generate animated videos without the pain of complex technical setup, local hardware limitations, and haphazard documentation.
-</div>
+
+This toolkit leverages <a href="https://modal.com/" target="_blank">Modal</a> for cloud computing and runs various open/closed-source video generation models.
 
 ## Supported Features
 
