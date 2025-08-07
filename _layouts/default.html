@@ -85,10 +85,11 @@
       <ul class="nav-menu">
         {% for item in site.navigation %}
         <li>
-          <a href="{{ item.url | relative_url }}" 
-             {% if page.url == item.url or page.url == item.url | append: '/' %}class="active"{% endif %}>
-            {{ item.title }}
-          </a>
+            {% assign item_url = item.url | relative_url %}
+            <a href="{{ item_url }}" 
+               {% if page.url == item.url or page.id == item.url %}class="active"{% endif %}>
+              {{ item.title }}
+            </a>
         </li>
         {% endfor %}
       </ul>
