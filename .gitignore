@@ -11,3 +11,5 @@ videos/
 output_videos/
 .venv
 examples/
+_site/
+Gemfile.lock
