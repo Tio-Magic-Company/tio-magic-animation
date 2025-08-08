@@ -53,14 +53,18 @@ class TioMagic:
         """Initialize TioMagic with default configuration."""
         self._config = Configuration()
 
-    def configure(self, provider=None, api_key=None, model_path=None):
+    def configure(self, provider=None, api_key=None, model_path=None, gpu=None, timeout=None, scaledown_window=None, flow_shift=None):
         """Configure the video generation provider and credentials.
         
         Args:
             provider (str, optional): Provider name ('local', 'modal', 'baseten').
             api_key (str, optional): API key for the specified provider.
             model_path (str, optional): Path to local model files (for local provider).
-            
+            gpu (GPUType, optional): GPU type to run on modal.
+            timeout (int, optional): Measure of execution time on modal.
+            scaledown_window (int, optional): How long container is warm for after completion of a task modal. Inputs will execute more quickly on a warm container compared to a cold one
+            flow_shift (float, optional): Set flow shift for models that accept flow shift
+
         Example:
             >>> tm.configure(provider="modal", api_key="sk-...")
             >>> tm.configure(provider="local", model_path="/path/to/model")
@@ -71,6 +75,8 @@ class TioMagic:
             self._config.set_api_key(provider, api_key)
         if model_path:
             self._config.set_model_path(provider, model_path)
+        if provider == 'modal' and (gpu or timeout or scaledown_window):
+            self._config.set_modal_options(gpu, timeout, scaledown_window)
 
     def text_to_video(self, model=None, required_args: Dict[str, Any]= None, **kwargs):
         """Generate video from text prompt.
@@ -108,6 +114,13 @@ class TioMagic:
                 message=error_msg,
                 value=required_args.get(field) if required_args else None
             )
+        
+        # if modal provider, add modal_options into kwargs
+        print("PROVIDER", provider)
+        if provider == 'modal':
+            print("PROVIDER MODAL, SET OPTIONS")
+
+            kwargs['modal_options'] = self._config.get_modal_options()
 
         print("--> Validated parameters: ", params)
 
@@ -172,8 +185,12 @@ class TioMagic:
                 message=error_msg,
                 value=required_args.get(field) if required_args else None
             )
+        # if modal provider, add modal_options into kwargs
+        if provider == 'modal':
+            kwargs['modal_options'] = self._config.get_modal_options()
 
         print("--> Validated parameters: ", params)
+        
 
         job_id = str(uuid4())
         job = Job(
@@ -234,6 +251,10 @@ class TioMagic:
                 message=error_msg,
                 value=required_args.get(field) if required_args else None
             )
+        # if modal provider, add modal_options into kwargs
+        if provider == 'modal':
+            kwargs['modal_options'] = self._config.get_modal_options()
+
         print("--> Validated parameters: ", params)
 
         job_id = str(uuid4())
@@ -299,6 +320,9 @@ class TioMagic:
                 message=error_msg,
                 value=required_args.get(field) if required_args else None
             )
+        # if modal provider, add modal_options into kwargs
+        if provider == 'modal':
+            kwargs['modal_options'] = self._config.get_modal_options()
 
         print("--> Validated parameters: ", params)
 
@@ -326,7 +350,6 @@ class TioMagic:
             )
 
         return job
-
     def check_generation_status(self, job_id, returnJob = False):
         """Check the current status of a video generation job.
         

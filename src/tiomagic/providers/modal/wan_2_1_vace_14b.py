@@ -58,37 +58,21 @@ image = (
 
 cache_volume = modal.Volume.from_name(CACHE_NAME, create_if_missing=True)
 outputs_volume = modal.Volume.from_name(OUTPUTS_NAME, create_if_missing=True)
-
 app = modal.App(APP_NAME)
 
-def app_class_factory(
-        base_class,
-        *,
-        gpu=GPU_CONFIG,
-        timeout=TIMEOUT,
-        scaledown_window=SCALEDOWN_WINDOW,
-        image=image,
-        app=app,
-        cache_path=CACHE_PATH,
-        cache_volume=cache_volume,
-        outputs_path=OUTPUTS_PATH,
-        outputs_volume=outputs_volume,
-):
-    return app.cls(
-        image=image,
-        gpu=gpu,
-        secrets=[modal.Secret.from_name("huggingface-secret")],
-        volumes={cache_path: cache_volume, outputs_path: outputs_volume},
-        timeout=timeout,
-        scaledown_window=scaledown_window,
-    )(base_class)
-
+@app.cls(
+    image=image,
+    gpu=GPU_CONFIG,
+    secrets=[modal.Secret.from_name("huggingface-secret")],
+    volumes={CACHE_PATH: cache_volume, OUTPUTS_PATH: outputs_volume},
+    timeout=TIMEOUT,
+    scaledown_window=SCALEDOWN_WINDOW,
+)
 class T2V:
     @modal.enter()
     def load_models(self):
         import torch
         from diffusers import AutoencoderKLWan, WanVACEPipeline
-        from diffusers.schedulers import FlowMatchEulerDiscreteScheduler
 
         print("Loading models into GPU memory...")
         self.vae = AutoencoderKLWan.from_pretrained(VACE_MODEL_ID, subfolder="vae", torch_dtype=torch.float32)
@@ -99,8 +83,6 @@ class T2V:
             print("unloading lora weights")
             self.pipe.unload_lora_weights()
         
-        flow_shift = 3.0
-        self.pipe.scheduler = FlowMatchEulerDiscreteScheduler.from_config(self.pipe.scheduler.config, flow_shift=flow_shift)
         self.pipe.to("cuda")
         self.pipe.enable_model_cpu_offload()
 
@@ -108,6 +90,14 @@ class T2V:
     @modal.method()
     def generate(self, data: Dict[str, Any]):
         from diffusers.utils import export_to_video
+        from diffusers.schedulers import FlowMatchEulerDiscreteScheduler
+
+        t2v_schema = FEATURE_SCHEMAS["text_to_video"][MODEL_NAME]
+
+        # dynamic flow shift
+        flow_shift = data.pop('flow_shift') if ('flow_shift' in data and data['flow_shift']) else t2v_schema["optional"]["flow_shift"]["default"]
+        self.pipe.scheduler = FlowMatchEulerDiscreteScheduler.from_config(self.pipe.scheduler.config, flow_shift=flow_shift)
+
         # for every value in data, pass into pipe
         frames = self.pipe(**data).frames[0]
 
@@ -126,7 +116,7 @@ class T2V:
         """Handle text-to-video generation.""" 
         # Create T2V instance and call generate
         try:
-            t2v_instance = T2VAppClass()
+            t2v_instance = T2V()
             call = t2v_instance.generate.spawn(data)
         except Exception as e:
             raise DeploymentError(
@@ -136,7 +126,6 @@ class T2V:
             )
 
         return JSONResponse({"call_id": call.object_id, "feature_type": FeatureType.TEXT_TO_VIDEO})
-T2VAppClass = app_class_factory(T2V)
 
 class Wan21VaceTextToVideo14B(ModalProviderBase):
     def __init__(self, api_key=None):
@@ -154,12 +143,19 @@ class Wan21VaceTextToVideo14B(ModalProviderBase):
         # print("payload: ", payload)
         return payload
 
+@app.cls(
+    image=image,
+    gpu=GPU_CONFIG,
+    secrets=[modal.Secret.from_name("huggingface-secret")],
+    volumes={CACHE_PATH: cache_volume, OUTPUTS_PATH: outputs_volume},
+    timeout=TIMEOUT,
+    scaledown_window=SCALEDOWN_WINDOW,
+)
 class I2V:
     @modal.enter()
     def load_models(self):
         import torch
         from diffusers import AutoencoderKLWan, WanVACEPipeline
-        from diffusers.schedulers.scheduling_unipc_multistep import UniPCMultistepScheduler
 
         print("Loading models into GPU memory...")
         self.vae = AutoencoderKLWan.from_pretrained(VACE_MODEL_ID, subfolder="vae", torch_dtype=torch.float32)
@@ -170,8 +166,6 @@ class I2V:
             print("unloading lora weights")
             self.pipe.unload_lora_weights()
 
-        flow_shift = 5.0
-        self.pipe.scheduler = UniPCMultistepScheduler.from_config(self.pipe.scheduler.config, flow_shift=flow_shift)
         self.pipe.to("cuda")
         self.pipe.enable_model_cpu_offload()
 
@@ -180,10 +174,16 @@ class I2V:
     def generate(self, data: Dict[str, Any]):
         import torch
         from diffusers.utils import export_to_video
+        from diffusers.schedulers.scheduling_unipc_multistep import UniPCMultistepScheduler
+
         print("***MODAL GENERATE METHOD***")
         print("Starting video generation process...")
 
         i2v_schema = FEATURE_SCHEMAS["image_to_video"][MODEL_NAME]
+
+        # dynamic flow shift
+        flow_shift = data.pop('flow_shift') if ('flow_shift' in data and data['flow_shift']) else i2v_schema["optional"]["flow_shift"]["default"]
+        self.pipe.scheduler = UniPCMultistepScheduler.from_config(self.pipe.scheduler.config, flow_shift=flow_shift)
 
         # Define video parameters
         height = data.get('height', i2v_schema["optional"]["height"]["default"])
@@ -235,7 +235,7 @@ class I2V:
 
         # Create I2V instance and call generate
         try:
-            i2v_instance = I2VAppClass()
+            i2v_instance = I2V()
             call = i2v_instance.generate.spawn(data)
         except Exception as e:
             raise DeploymentError(
@@ -245,7 +245,6 @@ class I2V:
             )
 
         return JSONResponse({"call_id": call.object_id, "feature_type": FeatureType.IMAGE_TO_VIDEO})
-I2VAppClass = app_class_factory(I2V)
 
 class Wan21VaceImageToVideo14B(ModalProviderBase):
     def __init__(self, api_key=None):
@@ -264,12 +263,19 @@ class Wan21VaceImageToVideo14B(ModalProviderBase):
             payload['image'] = local_image_to_base64(payload['image'])
         return payload
 
+@app.cls(
+    image=image,
+    gpu=GPU_CONFIG,
+    secrets=[modal.Secret.from_name("huggingface-secret")],
+    volumes={CACHE_PATH: cache_volume, OUTPUTS_PATH: outputs_volume},
+    timeout=TIMEOUT,
+    scaledown_window=SCALEDOWN_WINDOW,
+)
 class Interpolate:
     @modal.enter()
     def load_models(self):
         import torch
         from diffusers import AutoencoderKLWan, WanVACEPipeline
-        from diffusers.schedulers.scheduling_unipc_multistep import UniPCMultistepScheduler
 
         # Force GPU memory cleanup first
         if torch.cuda.is_available():
@@ -286,8 +292,6 @@ class Interpolate:
             print("unloading lora weights")
             self.pipe.unload_lora_weights()
 
-        flow_shift = 5.0
-        self.pipe.scheduler = UniPCMultistepScheduler.from_config(self.pipe.scheduler.config, flow_shift=flow_shift)
         self.pipe.to("cuda")
         self.pipe.enable_model_cpu_offload()
 
@@ -295,10 +299,15 @@ class Interpolate:
     @modal.method()
     def generate(self, data: Dict[str, Any]):
         from diffusers.utils import export_to_video
+        from diffusers.schedulers.scheduling_unipc_multistep import UniPCMultistepScheduler
         import torch
         print("Starting video generation process...")
 
         interpolate_schema = FEATURE_SCHEMAS["interpolate"][MODEL_NAME]
+        # dynamic flow shift
+        flow_shift = data.pop('flow_shift') if ('flow_shift' in data and data['flow_shift']) else interpolate_schema["optional"]["flow_shift"]["default"]
+        self.pipe.scheduler = UniPCMultistepScheduler.from_config(self.pipe.scheduler.config, flow_shift=flow_shift)
+
         height = data.get('height', interpolate_schema["optional"]["height"]["default"])
         width = data.get('width', interpolate_schema["optional"]["width"]["default"])
         num_frames = data.get('num_frames', interpolate_schema["optional"]["num_frames"]["default"])
@@ -347,7 +356,7 @@ class Interpolate:
 
         # Create Interpolate instance and call generate
         try:
-            interpolate_instance = InterpolateAppClass()
+            interpolate_instance = Interpolate()
             call = interpolate_instance.generate.spawn(data)
         except Exception as e:
             raise DeploymentError(
@@ -357,7 +366,6 @@ class Interpolate:
             )
 
         return JSONResponse({"call_id": call.object_id, "feature_type": FeatureType.INTERPOLATE})
-InterpolateAppClass = app_class_factory(Interpolate)
 
 class Wan21VaceInterpolate14B(ModalProviderBase):
     def __init__(self, api_key=None):
@@ -385,12 +393,19 @@ class Wan21VaceInterpolate14B(ModalProviderBase):
 
         return payload
 
+@app.cls(
+    image=image,
+    gpu=GPU_CONFIG,
+    secrets=[modal.Secret.from_name("huggingface-secret")],
+    volumes={CACHE_PATH: cache_volume, OUTPUTS_PATH: outputs_volume},
+    timeout=TIMEOUT,
+    scaledown_window=SCALEDOWN_WINDOW,
+)
 class PoseGuidance:
     @modal.enter()
     def load_models(self):
         import torch
         from diffusers import AutoencoderKLWan, WanVACEPipeline
-        from diffusers.schedulers import FlowMatchEulerDiscreteScheduler
         # from controlnet_aux import OpenposeDetector
         from easy_dwpose import DWposeDetector
         print("Loading models into GPU memory...")
@@ -402,8 +417,6 @@ class PoseGuidance:
             print("unloading lora weights")
             self.pipe.unload_lora_weights()
 
-        flow_shift = 3.0
-        self.pipe.scheduler = FlowMatchEulerDiscreteScheduler.from_config(self.pipe.scheduler.config, flow_shift=flow_shift)
         self.pipe.to("cuda")
         device = "cuda:0" if torch.cuda.is_available() else "cpu"
 
@@ -414,10 +427,15 @@ class PoseGuidance:
         from PIL import Image
         import PIL.Image
         from diffusers.utils import export_to_video, load_video
+        from diffusers.schedulers import FlowMatchEulerDiscreteScheduler
         import io
         import tempfile
 
         pose_guidance_schema = FEATURE_SCHEMAS["pose_guidance"][MODEL_NAME]
+        
+        # dynamic flow shift
+        flow_shift = data.pop('flow_shift') if ('flow_shift' in data and data['flow_shift']) else pose_guidance_schema["optional"]["flow_shift"]["default"]
+        self.pipe.scheduler = FlowMatchEulerDiscreteScheduler.from_config(self.pipe.scheduler.config, flow_shift=flow_shift)
 
         # if guiding_video provided, process video bytes and extract poses into PIL.Image
         if data.get('guiding_video', None) is not None:
@@ -505,7 +523,7 @@ class PoseGuidance:
             )
 
         try:
-            pose_guidance_instance = PoseGuidanceAppClass()
+            pose_guidance_instance = PoseGuidance()
             call = pose_guidance_instance.generate.spawn(data)
         except Exception as e:
             raise DeploymentError(
@@ -515,7 +533,6 @@ class PoseGuidance:
             )
 
         return JSONResponse({"call_id": call.object_id, "feature_type": FeatureType.POSE_GUIDANCE})
-PoseGuidanceAppClass = app_class_factory(PoseGuidance)
 
 class Wan21VacePoseGuidance14B(ModalProviderBase):
     def __init__(self, api_key=None):
@@ -545,12 +562,19 @@ class Wan21VacePoseGuidance14B(ModalProviderBase):
 
         return payload
 
+@app.cls(
+    image=image,
+    gpu=GPU_CONFIG,
+    secrets=[modal.Secret.from_name("huggingface-secret")],
+    volumes={CACHE_PATH: cache_volume, OUTPUTS_PATH: outputs_volume},
+    timeout=TIMEOUT,
+    scaledown_window=SCALEDOWN_WINDOW,
+)
 class PhantomFusionXT2V:
     @modal.enter()
     def load_models(self):
         import torch
         from diffusers import AutoencoderKLWan, WanVACEPipeline
-        from diffusers.schedulers import FlowMatchEulerDiscreteScheduler
 
         print("Loading models into GPU memory...")
         self.vae = AutoencoderKLWan.from_pretrained(
@@ -569,8 +593,6 @@ class PhantomFusionXT2V:
         )
         self.pipe.enable_lora()
         
-        flow_shift = 3.0
-        self.pipe.scheduler = FlowMatchEulerDiscreteScheduler.from_config(self.pipe.scheduler.config, flow_shift=flow_shift)
         self.pipe.to("cuda")
         self.pipe.enable_model_cpu_offload()
 
@@ -578,6 +600,14 @@ class PhantomFusionXT2V:
     @modal.method()
     def generate(self, data: Dict[str, Any]):
         from diffusers.utils import export_to_video
+        from diffusers.schedulers import FlowMatchEulerDiscreteScheduler
+
+        phantom_fusionx_schema = FEATURE_SCHEMAS["text_to_video"]["wan2.1-vace-14b-phantom-fusionx"]
+        
+        # dynamic flow shift
+        flow_shift = data.pop('flow_shift') if ('flow_shift' in data and data['flow_shift']) else phantom_fusionx_schema["optional"]["flow_shift"]["default"]
+        self.pipe.scheduler = FlowMatchEulerDiscreteScheduler.from_config(self.pipe.scheduler.config, flow_shift=flow_shift)
+
         # for every value in data, pass into pipe
         frames = self.pipe(**data).frames[0]
 
@@ -604,7 +634,7 @@ class PhantomFusionXT2V:
         print("handle web inference data: ", data)
         # Create T2V instance and call generate
         try:
-            t2v_instance = PhantomFusionXT2VAppClass()
+            t2v_instance = PhantomFusionXT2V()
             call = t2v_instance.generate.spawn(data)
         except Exception as e:
             raise DeploymentError(
@@ -614,7 +644,7 @@ class PhantomFusionXT2V:
             )
 
         return JSONResponse({"call_id": call.object_id, "feature_type": FeatureType.TEXT_TO_VIDEO})
-PhantomFusionXT2VAppClass = app_class_factory(PhantomFusionXT2V)
+
 class Wan21VaceTextToVideo14BPhantomFusionX(ModalProviderBase):
     def __init__(self, api_key=None):
         super().__init__(api_key)
@@ -632,19 +662,23 @@ class Wan21VaceTextToVideo14BPhantomFusionX(ModalProviderBase):
         # print("payload: ", payload)
         return payload
 
-
+@app.cls(
+    image=image,
+    gpu=GPU_CONFIG,
+    secrets=[modal.Secret.from_name("huggingface-secret")],
+    volumes={CACHE_PATH: cache_volume, OUTPUTS_PATH: outputs_volume},
+    timeout=TIMEOUT,
+    scaledown_window=SCALEDOWN_WINDOW,
+)
 class FusionXI2V:
     @modal.enter()
     def load_models(self):
         import torch
         from diffusers import AutoencoderKLWan, WanVACEPipeline
-        from diffusers.schedulers.scheduling_unipc_multistep import UniPCMultistepScheduler
 
         print("Loading models into GPU memory...")
         self.vae = AutoencoderKLWan.from_pretrained(VACE_MODEL_ID, subfolder="vae", torch_dtype=torch.float32)
         self.pipe = WanVACEPipeline.from_pretrained(VACE_MODEL_ID, vae=self.vae, torch_dtype=torch.bfloat16)
-        flow_shift = 5.0
-        self.pipe.scheduler = UniPCMultistepScheduler.from_config(self.pipe.scheduler.config, flow_shift=flow_shift)
 
         # Load I2V FusionX
         self.pipe.load_lora_weights("vrgamedevgirl84/Wan14BT2VFusioniX", weight_name="FusionX_LoRa/Wan2.1_I2V_14B_FusionX_LoRA.safetensors", adapter_names=["I2V FusionX"])
@@ -658,10 +692,16 @@ class FusionXI2V:
     def generate(self, data: Dict[str, Any]):
         import torch
         from diffusers.utils import export_to_video
+        from diffusers.schedulers.scheduling_unipc_multistep import UniPCMultistepScheduler
+
         print("***MODAL GENERATE METHOD***")
         print("Starting video generation process...")
 
         i2v_schema = FEATURE_SCHEMAS["image_to_video"]["wan2.1-vace-14b-i2v-fusionx"]
+        
+        # dynamic flow shift
+        flow_shift = data.pop('flow_shift') if ('flow_shift' in data and data['flow_shift']) else i2v_schema["optional"]["flow_shift"]["default"]
+        self.pipe.scheduler = UniPCMultistepScheduler.from_config(self.pipe.scheduler.config, flow_shift=flow_shift)
 
         # Define video parameters
         height = data.get('height', i2v_schema["optional"]["height"]["default"])
@@ -727,7 +767,7 @@ class FusionXI2V:
 
         # Create I2V instance and call generate
         try:
-            i2v_instance = FusionXI2VAppClass()
+            i2v_instance = FusionXI2V()
             call = i2v_instance.generate.spawn(data)
         except Exception as e:
             raise DeploymentError(
@@ -737,7 +777,6 @@ class FusionXI2V:
             )
 
         return JSONResponse({"call_id": call.object_id, "feature_type": FeatureType.IMAGE_TO_VIDEO})
-FusionXI2VAppClass = app_class_factory(FusionXI2V)
 
 class Wan21VaceImageToVideo14BFusionX(ModalProviderBase):
     def __init__(self, api_key=None):
@@ -779,16 +818,31 @@ class WebAPI(GenericWebAPI):
         # Route to appropriate class based on model and feature_type
         if feature_type == FeatureType.TEXT_TO_VIDEO and model == "wan2.1-vace-14b-phantom-fusionx":
             # Route to FusionXT2V for the fusionx model
-            return PhantomFusionXT2V.handle_web_inference(data)
+            handler_class = PhantomFusionXT2V
         if feature_type == FeatureType.IMAGE_TO_VIDEO and model == "wan2.1-vace-14b-i2v-fusionx":
-            return FusionXI2V.handle_web_inference(data)
+            handler_class = FusionXI2V
         else:
             # Route to default handler
             handler_class = self.feature_handlers[feature_type]
-            return handler_class.handle_web_inference(data)
+        # If user specifies gpu, timeout, scaledown window, applied here
+        if 'modal_options' in data and data['modal_options']:
+            modal_options = data['modal_options']
+            for key, value in modal_options.items():
+                if value is not None:
+                    print(f"Applying modal option: {key} = {value}")
+                    handler_class = handler_class.with_options(**{key: value})
+            data.pop('modal_options')
+        return handler_class.handle_web_inference(data)
 
 # Apply Modal decorator
-WebAPIClass = app_class_factory(WebAPI)
+WebAPI = app.cls(
+    image=image,
+    gpu=GPU_CONFIG,
+    secrets=[modal.Secret.from_name("huggingface-secret")],
+    volumes={CACHE_PATH: cache_volume, OUTPUTS_PATH: outputs_volume},
+    timeout=TIMEOUT,
+    scaledown_window=SCALEDOWN_WINDOW,
+)(WebAPI)
 
 
 # Register with the system registry

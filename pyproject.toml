@@ -50,10 +50,10 @@ dev = [
 ]
 
 [project.urls]
-# Homepage = "https://github.com/yourusername/tio-magic-animation"
-# Documentation = "https://github.com/yourusername/tio-magic-animation#readme"
-# Repository = "https://github.com/yourusername/tio-magic-animation"
-# Issues = "https://github.com/yourusername/tio-magic-animation/issues"
+# Homepage = "https://tiomagic.com"
+# Documentation = "https://tio-magic-company.github.io/tio-magic-animation/"
+# Repository = "https://github.com/Tio-Magic-Company/tio-magic-animation"
+# Issues = "https://github.com/Tio-Magic-Company/tio-magic-animation/issues"
 
 # Hatchling configuration
 [tool.hatch.build]
