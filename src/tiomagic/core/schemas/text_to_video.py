@@ -25,6 +25,29 @@ SCHEMAS = {
             "max_sequence_length": {"type": int, "default": 512, "description": "The maximum sequence length of the text encoder."}
         }
     },
+    "wan2.1-14b-t2v-fusionx": {
+        "required": {
+            "prompt": {"type": str, "description": "Text prompt to guide generation"},
+        },
+        "optional": {
+            "negative_prompt": {"type": str, "description": "The prompt or prompts to avoid during image generation. Ignored when guidance_scale is less than 1."},
+            "height": {"type": int, "default": 480, "description": "The height in pixels of the generated image."},
+            "width": {"type": int, "default": 832, "description": "The width in pixels of the generated image."},
+            "num_frames": {"type": int, "default": 81, "description": "The number of frames in the generated video."},
+            "num_inference_steps": {"type": int, "default": 50, "description": "The number of denoising steps. More steps usually lead to higher quality at the expense of slower inference."},
+            "guidance_scale": {"type": float, "default": 5.0, "description": "Guidance scale for classifier-free diffusion. Higher values encourage generation to be closely linked to the text prompt."},
+            "num_videos_per_prompt": {"type": int, "default": 1, "description": "The number of videos to generate per prompt."},
+            "generator": {"type": "torch.Generator", "description": "A torch.Generator or List[torch.Generator] to make generation deterministic."},
+            "latents": {"type": "torch.Tensor", "description": "Pre-generated noisy latents to be used as inputs for image generation."},
+            "prompt_embeds": {"type": "torch.Tensor", "description": "Pre-generated text embeddings, used as an alternative to the 'prompt' argument."},
+            "output_type": {"type": str, "default": "np", "description": "The output format of the generated image. Choose between 'PIL.Image' or 'np.array'."},
+            "return_dict": {"type": bool, "default": True, "description": "Whether or not to return a WanPipelineOutput object instead of a plain tuple."},
+            "attention_kwargs": {"type": dict, "description": "A kwargs dictionary passed to the AttentionProcessor."},
+            "callback_on_step_end": {"type": "Callable", "description": "A function called at the end of each denoising step during inference."},
+            "callback_on_step_end_tensor_inputs": {"type": list, "description": "The list of tensor inputs for the callback_on_step_end function."},
+            "max_sequence_length": {"type": int, "default": 512, "description": "The maximum sequence length of the text encoder."}
+        }
+    },
     "wan2.1-vace-14b": {
         "required": {
             "prompt": {"type": str, "description": "Text prompt to guide generation"},
@@ -46,7 +69,8 @@ SCHEMAS = {
             "attention_kwargs": {"type": dict, "description": "A kwargs dictionary passed along to the AttentionProcessor."},
             "callback_on_step_end": {"type": "Callable", "description": "A function called at the end of each denoising step during inference."},
             "callback_on_step_end_tensor_inputs": {"type": list, "description": "The list of tensor inputs for the callback_on_step_end function."},
-            "max_sequence_length": {"type": int, "default": 512, "description": "The maximum sequence length of the text encoder."}
+            "max_sequence_length": {"type": int, "default": 512, "description": "The maximum sequence length of the text encoder."},
+            "flow_shift": {"type": float, "default": 3.0, "description": "a value that estimates motion between two frames. A larger flow shift focuses on high motion or transformation. A smaller flow shift focuses on stability."}
         }
     },
     "cogvideox-5b": {
@@ -106,23 +130,8 @@ SCHEMAS = {
             "attention_kwargs": {"type": dict, "description": "A kwargs dictionary passed along to the AttentionProcessor."},
             "callback_on_step_end": {"type": "Callable", "description": "A function called at the end of each denoising step during inference."},
             "callback_on_step_end_tensor_inputs": {"type": list, "description": "The list of tensor inputs for the callback_on_step_end function."},
-            "max_sequence_length": {"type": int, "default": 512, "description": "The maximum sequence length of the text encoder."}
-        }
-    },
-    "wan2.2-t2v-a14b": {
-        "required": {
-            "prompt": {"type": str, "description": "Text prompt to guide generation"},
-        },
-        "optional": {
-            "negative_prompt": {"type": str, "default": "", "description": "Negative prompt for excluding content from the generation."},
-            "size": {"type": tuple, "default": (1280, 720), "description": "Controls video resolution as a (width, height) tuple."},
-            "frame_num": {"type": int, "default": 81, "description": "The number of frames to generate, which should follow the 4n+1 pattern."},
-            "shift": {"type": float, "default": 5.0, "description": "Noise schedule shift parameter that affects the video's temporal dynamics."},
-            "sample_solver": {"type": str, "default": "unipc", "description": "The solver used to sample the video during generation."},
-            "sampling_steps": {"type": int, "default": 50, "description": "Number of diffusion sampling steps; more steps can improve quality but increase time."},
-            "guide_scale": {"type": float, "default": 5.0, "description": "Classifier-free guidance scale that controls prompt adherence."},
-            "seed": {"type": int, "default": -1, "description": "Random seed for deterministic generation; -1 uses a random seed."},
-            "offload_model": {"type": bool, "default": True, "description": "If True, offloads models to the CPU to conserve VRAM."}
+            "max_sequence_length": {"type": int, "default": 512, "description": "The maximum sequence length of the text encoder."},
+            "flow_shift": {"type": float, "default": 3.0, "description": "a value that estimates motion between two frames. A larger flow shift focuses on high motion or transformation. A smaller flow shift focuses on stability."}
         }
     },
     # Add more models as needed

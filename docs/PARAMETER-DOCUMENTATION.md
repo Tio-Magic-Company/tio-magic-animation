@@ -348,8 +348,35 @@ Because PusaV1 is relatively new, there is no central location for its required 
     </tbody>
     </table>
 </details>
-### Wan 2.1 Vace 14b
 
+### Wan 2.1 14b Text to Video FusionX
+This is a LoRA applied on top of Wan 2.1 Vace 14b. All of the required arguments and optional arguments are the same as Wan 2.1 Vace 14b, except for the model string.
+<details>
+    <summary>Required Arguments</summary>
+    <table>
+    <thead>
+    <tr>
+    <th>Name</th>
+    <th>Type</th>
+    <th>Description</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr>
+    <td>prompt</td>
+    <td>string</td>
+    <td>Text prompt to guide generation</td>
+    </tr>
+    <tr>
+    <td>model</td>
+    <td>string</td>
+    <td>"wan2.1-14b-t2v-fusionx"</td>
+    </tr>
+    </tbody>
+    </table>
+</details>
+
+### Wan 2.1 Vace 14b
 <details>
     <summary>Required Arguments</summary>
 
@@ -491,34 +518,11 @@ Because PusaV1 is relatively new, there is no central location for its required 
     <td>512</td>
     <td>Maximum sequence length in the encoded prompt.</td>
     </tr>
-    </tbody>
-    </table>
-</details>
-### Wan 2.1 Vace 14b T2V FusionX
-
-This is a LoRA applied on top of Wan 2.1 Vace 14b. All of the required arguments and optional arguments are the same as Wan 2.1 Vace 14b, except for the model string.
-
-<details>
-    <summary>Required Arguments</summary>
-
-    <table>
-    <thead>
     <tr>
-    <th>Name</th>
-    <th>Type</th>
-    <th>Description</th>
-    </tr>
-    </thead>
-    <tbody>
-    <tr>
-    <td>prompt</td>
-    <td>string</td>
-    <td>Text prompt to guide generation</td>
-    </tr>
-    <tr>
-    <td>model</td>
-    <td>string</td>
-    <td>"wan-14b-vace-t2v-fusionx"</td>
+        <td>flow_shift</td>
+        <td>float</td>
+        <td>3.0</td>
+        <td>A value that estimates motion between two frames. A larger flow shift focuses on high motion or transformation. A smaller flow shift focuses on stability.</td>
     </tr>
     </tbody>
     </table>
@@ -1484,9 +1488,6 @@ Because PusaV1 is relatively new, there is no central location for its required 
 
 <details>
     <summary>Optional Arguments</summary>
-
-    Wan vace supports flow shift, which is a value that estimates motion between two frames. A larger flow shift focuses on high motion or transformation. A smaller flow shift focuses on stability. The default for Pose Guidance is 3.0. Flow shift is calculated and loaded in the load_models stage. If you want to adjust flow shift, you must change the value in the load_models method, stop the app on Modal, and re-load the model.
-
     <table>
     <thead>
     <tr>
@@ -1611,17 +1612,22 @@ Because PusaV1 is relatively new, there is no central location for its required 
     <td>512</td>
     <td>Maximum sequence length in the encoded prompt.</td>
     </tr>
+    <tr>
+        <td>flow_shift</td>
+        <td>float</td>
+        <td>5.0</td>
+        <td>A value that estimates motion between two frames. A larger flow shift focuses on high motion or transformation. A smaller flow shift focuses on stability.</td>
+    </tr>
     </tbody>
     </table>
 </details>
 
 ### Wan 2.1 Vace 14b I2V FusionX
 
-This is a LoRA applied on top of Wan 2.1 Vace 14b I2V. All of the required arguments and optional arguments are the same as Wan 2.1 Vace 14b I2V, except for the model string.
+This is a LoRA applied on top of Wan 2.1 Vace 14b. All of the required arguments and optional arguments are the same as Wan 2.1 Vace 14b, except for the model string.
 
 <details>
     <summary>Required Arguments</summary>
-
     <table>
     <thead>
     <tr>
@@ -1984,6 +1990,12 @@ This is a LoRA applied on top of Wan 2.1 Vace 14b I2V. All of the required argum
     <td>int</td>
     <td>512</td>
     <td>Maximum sequence length in the encoded prompt.</td>
+    </tr>
+    <tr>
+        <td>flow_shift</td>
+        <td>float</td>
+        <td>5.0</td>
+        <td>A value that estimates motion between two frames. A larger flow shift focuses on high motion or transformation. A smaller flow shift focuses on stability.</td>
     </tr>
     </tbody>
     </table>
@@ -2400,6 +2412,12 @@ This is a LoRA applied on top of Wan 2.1 Vace 14b I2V. All of the required argum
     <td>int</td>
     <td>512</td>
     <td>Maximum sequence length in the encoded prompt.</td>
+    </tr>
+    <tr>
+        <td>flow_shift</td>
+        <td>float</td>
+        <td>3.0</td>
+        <td>A value that estimates motion between two frames. A larger flow shift focuses on high motion or transformation. A smaller flow shift focuses on stability.</td>
     </tr>
     </tbody>
     </table>

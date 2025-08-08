@@ -359,11 +359,20 @@ class WebAPI(GenericWebAPI):
         # Route to appropriate class based on model and feature_type
         if feature_type == FeatureType.TEXT_TO_VIDEO and model == "wan2.1-14b-t2v-fusionx":
             # Route to FusionT2V for the fusionx model
-            return FusionXT2V.handle_web_inference(data)
+            handler_class = FusionXT2V
         else:
             # Route to default handler
             handler_class = self.feature_handlers[feature_type]
-            return handler_class.handle_web_inference(data)
+       
+        # If user specifies gpu, timeout, scaledown window, applied here
+        if 'modal_options' in data and data['modal_options']:
+            modal_options = data['modal_options']
+            for key, value in modal_options.items():
+                if value is not None:
+                    print(f"Applying modal option: {key} = {value}")
+                    handler_class = handler_class.with_options(**{key: value})
+            data.pop('modal_options')
+        return handler_class.handle_web_inference(data)
 
 """Transforms the WebAPI class into a Modal-compatible class"""
 WebAPI = app.cls(

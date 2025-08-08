@@ -2,7 +2,7 @@ from tiomagic import tm
 from dotenv import load_dotenv
 
 def text_to_video_example():
-    tm.configure(provider="modal")
+    tm.configure(provider="modal", gpu="H100", timeout = 1000, scaledown_window = 1000)
     # tm.configure(provider="local")
     # prompt = "the playful cartoon penguin picks up the green sunglasses and puts them on."
     # prompt = "A suited astronaut, with the red dust of Mars clinging to their boots, reaches out to shake hands with an alien being, their skin a shimmering blue, under the pink-tinged sky of the fourth planet. In the background, a sleek silver rocket, a beacon of human ingenuity, stands tall, its engines powered down, as the two representatives of different worlds exchange a historic greeting amidst the desolate beauty of the Martian landscape."
@@ -22,12 +22,13 @@ def text_to_video_example():
     } 
     optional_args = {
         "negative_prompt": negative_prompt,
-        "width": 832,
-        "height": 480
+        "flow_shift": 6.0
+        # "width": 832,
+        # "height": 480
     }
     # tm.text_to_video(model="pusa-v1", required_args=required_args, **optional_args)
     # tm.text_to_video(model="wan2.1-t2v-14b", required_args=required_args, **optional_args)
-    # tm.text_to_video(model="wan2.1-vace-14b", required_args=required_args, **optional_args)
+    tm.text_to_video(model="wan2.1-vace-14b", required_args=required_args, **optional_args)
     # tm.text_to_video(model="cogvideox-5b", required_args=required_args, **optional_args)
     # tm.text_to_video(model="wan2.1-vace-14b-phantom-fusionx", required_args=required_args, **optional_args)
     
@@ -87,7 +88,7 @@ def image_to_video_example():
     # tm.image_to_video(model="wan2.1-vace-14b-phantom-fusionx", required_args=required_args, **optional_args)
     # tm.image_to_video(model="veo-2.0-generate-001", required_args=required_args, **optional_args)
     # tm.image_to_video(model="wan2.2-ti2v-a14b", required_args=required_args, **optional_args)
-    tm.image_to_video(model="luma-ray-2", required_args=required_args)
+    # tm.image_to_video(model="luma-ray-2", required_args=required_args)
 
 def interpolate_example():
     tm.configure(provider="modal")

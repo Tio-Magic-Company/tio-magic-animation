@@ -27,7 +27,8 @@ SCHEMAS = {
             "attention_kwargs": {"type": dict, "description": "A kwargs dictionary passed along to the AttentionProcessor."},
             "callback_on_step_end": {"type": "Callable", "description": "A function called at the end of each denoising step during inference."},
             "callback_on_step_end_tensor_inputs": {"type": list, "description": "The list of tensor inputs for the callback_on_step_end function."},
-            "max_sequence_length": {"type": int, "default": 512, "description": "The maximum sequence length of the text encoder."}
+            "max_sequence_length": {"type": int, "default": 512, "description": "The maximum sequence length of the text encoder."},
+            "flow_shift": {"type": float, "default": 5.0, "description": "a value that estimates motion between two frames. A larger flow shift focuses on high motion or transformation. A smaller flow shift focuses on stability."}
         }
     },
     "wan2.1-i2v-14b-720p": {
@@ -205,7 +206,8 @@ SCHEMAS = {
             "attention_kwargs": {"type": dict, "description": "A kwargs dictionary passed along to the AttentionProcessor."},
             "callback_on_step_end": {"type": "Callable", "description": "A function called at the end of each denoising step during inference."},
             "callback_on_step_end_tensor_inputs": {"type": list, "description": "The list of tensor inputs for the callback_on_step_end function."},
-            "max_sequence_length": {"type": int, "default": 512, "description": "The maximum sequence length of the text encoder."}
+            "max_sequence_length": {"type": int, "default": 512, "description": "The maximum sequence length of the text encoder."},
+            "flow_shift": {"type": float, "default": 5.0, "description": "a value that estimates motion between two frames. A larger flow shift focuses on high motion or transformation. A smaller flow shift focuses on stability."}
         }
     },
     "luma-ray-2": {
@@ -214,24 +216,7 @@ SCHEMAS = {
             "image": {"type": str, "description": "URL to input image"}
         },
         "optional": {}
-    },
-    "wan2.2-ti2v-a14b": {
-        "required": {
-            "prompt": {"type": str, "description": "Text prompt to guide generation"},
-            "image": {"type": str, "description": "URL to input image"}
-        },
-        "optional": {
-            "negative_prompt": {"type": str, "default": "", "description": "Negative prompt for excluding content from the generation."},
-            "size": {"type": tuple, "default": (1280, 704), "description": "Controls video resolution as a (width, height) tuple."},
-            "frame_num": {"type": int, "default": 81, "description": "The number of frames to generate, which should follow the 4n+1 pattern."},
-            "shift": {"type": float, "default": 5.0, "description": "Noise schedule shift parameter that affects the video's temporal dynamics."},
-            "sample_solver": {"type": str, "default": "unipc", "description": "The solver used to sample the video during generation."},
-            "sampling_steps": {"type": int, "default": 50, "description": "Number of diffusion sampling steps; more steps can improve quality but increase time."},
-            "guide_scale": {"type": float, "default": 5.0, "description": "Classifier-free guidance scale that controls prompt adherence."},
-            "seed": {"type": int, "default": -1, "description": "Random seed for deterministic generation; -1 uses a random seed."},
-            "offload_model": {"type": bool, "default": True, "description": "If True, offloads models to the CPU to conserve VRAM."}
-        }
-    },
+    }
 
     # Add more models as needed
 }

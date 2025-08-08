@@ -27,7 +27,8 @@ SCHEMAS = {
             "attention_kwargs": {"type": dict, "description": "A kwargs dictionary passed to the AttentionProcessor."},
             "callback_on_step_end": {"type": "Callable", "description": "A function called at the end of each denoising step during inference."},
             "callback_on_step_end_tensor_inputs": {"type": list, "description": "The list of tensor inputs for the callback_on_step_end function."},
-            "max_sequence_length": {"type": int, "default": 512, "description": "The maximum sequence length for the text encoder."}
+            "max_sequence_length": {"type": int, "default": 512, "description": "The maximum sequence length for the text encoder."},
+            "flow_shift": {"type": float, "default": 5.0, "description": "a value that estimates motion between two frames. A larger flow shift focuses on high motion or transformation. A smaller flow shift focuses on stability."}
         }
     },
     "wan2.1-vace-14b": {

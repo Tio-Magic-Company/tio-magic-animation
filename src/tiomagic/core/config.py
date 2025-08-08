@@ -10,6 +10,11 @@ class Configuration:
         self._provider = "modal" #default
         self._api_keys = {}
         self._model_path = None #local models
+        self._modal_options = {
+            "gpu": None,
+            "timeout": None,
+            "scaledown_window": None,
+        }
         self._options = {} #additional provider-specific options
     def get_provider(self):
         return self._provider
@@ -40,4 +45,17 @@ class Configuration:
         self._options[key] = value
     def get_all_options(self):
         return self._options.copy()
+    
+    def set_gpu(self, gpu):
+        self._gpu = gpu
+    def set_timeout(self, timeout):
+        self._timeout = timeout
+    def set_scaledown(self, scaledown_window):
+        self._scaledown_window = scaledown_window
 
+    def set_modal_options(self, gpu, timeout, scaledown_window):
+        self._modal_options['gpu'] = gpu
+        self._modal_options['timeout'] = timeout
+        self._modal_options['scaledown_window'] = scaledown_window
+    def get_modal_options(self):
+        return self._modal_options

@@ -306,6 +306,15 @@ class GenericWebAPI:
 
         # Route to appropriate class
         handler_class = self.feature_handlers[feature_type]
+        
+        # If user specifies gpu, timeout, scaledown window, applied here
+        if 'modal_options' in data and data['modal_options']:
+            modal_options = data['modal_options']
+            for key, value in modal_options.items():
+                if value is not None:
+                    print(f"Applying modal option: {key} = {value}")
+                    handler_class = handler_class.with_options(**{key: value})
+            data.pop('modal_options')
         return handler_class.handle_web_inference(data)
 
     @modal.fastapi_endpoint(method="GET")
