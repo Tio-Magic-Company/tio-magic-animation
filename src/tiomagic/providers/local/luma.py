@@ -16,7 +16,7 @@ from ...core.constants import FeatureType
 from lumaai import LumaAI
 # async options available, check Luma Documentation
 
-APP_NAME = "test-luma-ray-2"
+APP_NAME = "luma-ray-2"
 MODEL_NAME = "ray-2"
 
 class LumaRay2I2V(LocalProviderBase):

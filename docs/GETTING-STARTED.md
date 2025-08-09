@@ -6,63 +6,36 @@ permalink: ./getting-started
 
 # Getting Started - Installation
 
-*(In the future will be `pip install`)*
-
-1. Open your Command Line Interface (CLI) - terminal on Mac or command prompt on Windows
+1. Open your Command Line Interface (CLI) - terminal on Mac or command prompt on Windows and move to the directory you wish to run this code in
 2. Download Python: `sudo apt install python3`
 3. Install Pip (Python's package manager): `sudo apt install python3-pip`
-4. Clone this repository to a local directory 
-5. Change directories to the location in which you cloned your repository using `cd`
-6. Create a virtual environment: `python3 -m venv venv`
-7. Activate the virtual environment - (you should see `(venv)` on your command line):
+4. Create a virtual environment: `python3 -m venv venv`
+5. Activate the virtual environment -(you should see `(venv)` on your command line after activation):
    - **On MacOS/Linux**: `source venv/bin/activate`
    - **On Windows Command Prompt**: `venv/Scripts/activate`
-8. Run `pip install -e .`
-   - **Don't forget the DOT!**
-9. Create a `.env` file at the root of your repository. Depending on what provider(s) you are using, copy/paste the appropriate access keys to the `.env` file in the repository:
+6. Run `pip install tiomagic`
+7. Create a `.env` file at the root of your repository. Depending on what provider(s) you are using, copy/paste the appropriate access keys to the `.env` file in the repository:
    - **Veo 2**: `GOOGLE_API_KEY`
    - **Luma AI**: `LUMAAI_API_KEY`
    - **Modal**: `MODAL_TOKEN_ID` and `MODAL_TOKEN_SECRET`
-10. `cd` to `quick_start.py`, configure the file to your needs (see examples below), and run `python3 quick_start.py`
-11. When you are done developing, run `deactivate` to exit the virtual environment
+8. Create a Hugging Face account and add the token to your Modal account (this is needed to access open source models)
+9. Copy/paste `modal_demo.py` from [Tio Magic Animation repository] (https://github.com/Tio-Magic-Company/tio-magic-animation) to run a Modal example of this toolkit
+10. When you are done developing, run `deactivate` to exit the virtual environment
 
 # Getting Started - Quick Start
 
-Move to the directory where `quick_start.py` is located and run `python3 quick_start.py`
+1. At the top of your file, add `from tiomagic import tm`
+2. Decide which provider, feature, and model you want to run. You can run `tm.list_implementations()` to get a comprehensive list of what this toolkit can run
+3. Establish a configuration `tm.configure(provider="...")`. If you are running on a Modal provider, you can also specify gpu, timeout, and scale down window.
+4. Define your required arguments and optional arguments. Refer to [Parameter Documentation](https://tio-magic-company.github.io/tio-magic-animation/parameter-docs) for a comprehensive list of parameters for each model. An example is `tm.image_to_video(model="...", required_args=..., **optional_args)
+5. Run your file!
 
-```
-from tiomagic import tm
-from dotenv import load_dotenv
+# Gradio GUI
+A locally hosted Gradio GUI is provided for your convenience
+1. Clone the [Tio Magic Animation Toolkit](https://github.com/Tio-Magic-Company/tio-magic-animation) 
+2. Follow steps 1-8 of Getting Started - Installation
+3. Run python3 gradio_wrapper.py
 
-def run_image_to_video():
-    tm.configure(provider="provider")
-    
-    image = "/local/path/to/image"
-    prompt = "this is the text prompt used in video generation"
-    negative_prompt = "blurry, low quality, getty"
-    
-    required_args = {
-        "prompt": prompt,
-        "image": image
-    }
-    optional_args = {
-        "negative_prompt": negative_prompt
-    }
-    
-    tm.image_to_video(model="model-name", required_args=required_args, **optional_args)
-
-def check_status(job_id: str):
-    # updates generation_log.json
-    tm.check_generation_status(job_id)
-
-if __name__ == "__main__":
-    load_dotenv()
-    
-    run_image_to_video()
-    
-    # job_id = "..."
-    # check_status(job_id)
-```
 # Running Modal Models
 
 ## How it works
@@ -87,7 +60,6 @@ Depending on the model and feature you use, ensure that your required and option
 
 ```python
 from tiomagic import tm
-from dotenv import load_dotenv
 
 def interpolate_example():
     tm.configure(provider="modal")
@@ -120,6 +92,7 @@ Once you successfully run a feature call on Modal, the job will show up in `gene
 
 Occasionally check on the status of the job. Once it is completed on Modal, running `check_status` will download the resulting video into `output_videos` directory in your local repository. You can also find the output video on your Modal dashboard under "Volumes".
 
+For detailed API information, refer to <a href="https://tio-magic-company.github.io/tio-magic-animation/api" target="_blank">API Reference</a>.
 
 # Running Local Models
 
@@ -141,7 +114,6 @@ Running a feature call (`tm.image_to_video(model="...", required_params="...")`)
 
 ```python
 from tiomagic import tm
-from dotenv import load_dotenv
 
 def veo_image_to_video():
     tm.configure(provider="local")
@@ -168,7 +140,6 @@ def veo_image_to_video():
 
 ```python
 from tiomagic import tm
-from dotenv import load_dotenv
 
 def luma_image_to_video():
     tm.configure(provider="local")
@@ -187,3 +158,4 @@ def luma_image_to_video():
 **NOTES**:
 - Images all must be URLs, they cannot be local images
 - Luma AI API does NOT have an asynchronous method of running. You must wait for the function to complete. Once the function finishes, your video will be under directory `output_videos`
+

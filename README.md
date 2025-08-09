@@ -4,7 +4,7 @@
 [![Website](https://img.shields.io/badge/Website-Tio_Magic-181717?logo=google-chrome)](https://tiomagic.com/)
 [![Documentation](https://img.shields.io/badge/Documentation-GitHub%20Pages-green?logo=github)](https://tio-magic-company.github.io/tio-magic-animation/)
 
-Tio Magic Animation Toolkit is designed to simplify the use of video AI models for animation. The Animation Toolkit empowers animators, developers, and AI enthusiasts to easily generate animated videos without the pain of complex technical setup, local hardware limitations, and haphazard documentation.
+Tio Magic Animation Toolkit is designed to simplify the use of open and closed-source video AI models for animation. The Animation Toolkit empowers animators, developers, and AI enthusiasts to easily generate animated videos without the pain of complex technical setup, local hardware limitations, and haphazard documentation.
 
 This toolkit leverages <a href="https://modal.com/" target="_blank">Modal</a> for cloud computing and runs various open/closed-source video generation models.
 
@@ -85,7 +85,7 @@ This toolkit leverages <a href="https://modal.com/" target="_blank">Modal</a> fo
 </table>
 
 ## Text to Video
-*A playful cartoon-style penguin with a round belly and flappy wings waddles up to a pair of green sunglasses lying on the ground. The penguin leans forward, carefully picks up the sunglasses with its flipper, and smoothly lifts them up to its face. It tilts its head with a confident smile as the green sunglasses rest perfectly on its beak. The animation is smooth and expressive, with exaggerated, bouncy cartoon motion.*
+*Prompt: A playful cartoon-style penguin with a round belly and flappy wings waddles up to a pair of green sunglasses lying on the ground. The penguin leans forward, carefully picks up the sunglasses with its flipper, and smoothly lifts them up to its face. It tilts its head with a confident smile as the green sunglasses rest perfectly on its beak. The animation is smooth and expressive, with exaggerated, bouncy cartoon motion.*
 
 <table>
   <tr>
@@ -113,9 +113,9 @@ python3 -m venv venv
 source venv/bin/activate # on MacOS/Linux
 venv/Scripts/activate # on Windows Command Prompt
 ```
-Then, install Python packages:
+Then, install TioMagic package:
 ```
-pip install -e .
+pip install tiomagic
 ```
 Then, create a .env file. Depending on what provider(s) you are using, copy/pase appropriate access keys to the .env file. For starters, we recommend registering for a Modal account and create an access token:
 ```
@@ -126,9 +126,15 @@ Create a Hugging Face account and add the token to your Modal account (this is n
 
 
 ## How to Run Modal Demo 
-```
-python quick_start.py
-```
+Copy/paste `modal_demo.py` from repository to run a Modal example of this toolkit
+Run `python3 modal_demo.py`
+Please note that this demo runs on Modal credits. The number of credits used per run is dependent on the model you are running and the gpu. The first time you run a model and load it onto Modal will cost more than running subsequent generationa. The approximate cost of running `modal_demo.py` for the first time is about $0.93. For more information on Modal pricing, refer to the [Modal Pricing Page](https://modal.com/pricing)
+
+## Gradio GUI
+A locally hosted Gradio GUI is provided for your convenience
+1. Clone the [Tio Magic Animation Toolkit](https://github.com/Tio-Magic-Company/tio-magic-animation) 
+2. Follow Usage instructions above
+3. Run python3 gradio_wrapper.py
 
 ## Supported Providers and Models
 
@@ -167,3 +173,26 @@ python quick_start.py
 
 ### Interpolate
 - [Luma AI Ray 2](https://lumalabs.ai/ray)
+
+## Disclaimer
+**TL;DR**: We don't make the videos - the AI models do. We just make it easier to use them.
+
+TioMagic Animation is an **interface toolkit** that sits between you and various video generation AI models. Think of it as a universal remote control for AI video models.
+
+### What we do:
+✅ Provide a simple Python API to access multiple video models  
+✅ Handle the complexity of deploying models on Modal/cloud infrastructure  
+✅ Eliminate the need for expensive local GPUs  
+✅ Manage job queuing, status tracking, and result retrieval  
+✅ Abstract away provider-specific implementation details  
+
+### What we don't do:
+❌ Create or train the AI models  
+❌ Modify or enhance model outputs  
+❌ Own any rights to the generated content  
+❌ Control what the models can or cannot generate  
+
+### Important Notes:
+- All generated content comes directly from the underlying models (e.g., Wan2.1-VACE, CogVideoX)
+- You must comply with each model's individual license terms
+- Model availability and capabilities depend on the model creators, not us

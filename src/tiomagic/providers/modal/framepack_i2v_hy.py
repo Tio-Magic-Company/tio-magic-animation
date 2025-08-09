@@ -11,7 +11,7 @@ from ...core.errors import (
     DeploymentError, ProcessingError
 )
 
-APP_NAME = "test-framepack-i2v-hy"
+APP_NAME = "framepack-i2v-hy"
 CACHE_NAME = f"{APP_NAME}-cache"
 CACHE_PATH = "/cache"
 OUTPUTS_NAME = f'{APP_NAME}-outputs'

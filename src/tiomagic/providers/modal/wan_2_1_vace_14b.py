@@ -15,7 +15,7 @@ from ...core.errors import (
 
 
 # --- Configuration ---
-APP_NAME = "test-wan-2.1-vace-t2v-14b"
+APP_NAME = "wan-2.1-vace-t2v-14b"
 MODEL_NAME = "wan2.1-vace-14b"
 CACHE_NAME = f"{APP_NAME}-cache"
 CACHE_PATH = "/cache"

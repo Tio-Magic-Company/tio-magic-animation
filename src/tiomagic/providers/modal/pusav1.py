@@ -13,7 +13,7 @@ from .base import GPUType, GenericWebAPI, ModalProviderBase
 
 
 # --- Configuration ---
-APP_NAME = "test-pusa-v1"
+APP_NAME = "pusa-v1"
 CACHE_PATH = "/cache"
 CACHE_NAME = f"{APP_NAME}-cache"
 OUTPUTS_NAME = f"{APP_NAME}-outputs"

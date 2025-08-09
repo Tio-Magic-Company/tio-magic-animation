@@ -10,7 +10,7 @@ from ...core.registry import registry
 from ...core._utils import load_image_robust, is_local_path, local_image_to_base64, create_timestamp, extract_image_dimensions
 from ...core.constants import FeatureType
 
-APP_NAME = "test-cogvideox-5b-i2v"
+APP_NAME = "cogvideox-5b-i2v"
 CACHE_PATH = "/cache"
 CACHE_NAME = f"{APP_NAME}-cache"
 OUTPUTS_NAME = f"{APP_NAME}-outputs"

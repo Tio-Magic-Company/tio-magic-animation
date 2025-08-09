@@ -11,7 +11,7 @@ from ...core._utils import create_timestamp
 from ...core.constants import FeatureType
 
 # --- Configuration ---
-APP_NAME = "test-cogvideox-5b"
+APP_NAME = "cogvideox-5b"
 CACHE_PATH = "/cache"
 CACHE_NAME = f"{APP_NAME}-cache"
 OUTPUTS_NAME = f"{APP_NAME}-outputs"

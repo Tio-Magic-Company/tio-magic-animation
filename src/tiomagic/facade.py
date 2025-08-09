@@ -38,6 +38,8 @@ from .core.errors import (
     UnknownModelError, UnknownProviderError, ValidationError,
     JobExecutionError, ResourceNotFoundError,
 )
+from dotenv import load_dotenv
+load_dotenv()
 
 class TioMagic:
     """Main interface for video generation operations.
@@ -53,7 +55,7 @@ class TioMagic:
         """Initialize TioMagic with default configuration."""
         self._config = Configuration()
 
-    def configure(self, provider=None, api_key=None, model_path=None, gpu=None, timeout=None, scaledown_window=None, flow_shift=None):
+    def configure(self, provider=None, api_key=None, model_path=None, gpu=None, timeout=None, scaledown_window=None):
         """Configure the video generation provider and credentials.
         
         Args:
@@ -455,7 +457,7 @@ class TioMagic:
     def get_schema(self, feature, model):
         """List schema for particular implementation"""
         schema = FEATURE_SCHEMAS[feature][model]
-        return schema
+        print(f"schema for {feature} {model}: {schema}")
     def list_implementations(self):
         """List all implementations available
         Models listed and sorted by provider or feature

@@ -16,7 +16,7 @@ from ...core.constants import FeatureType
 from google import genai
 from google.genai import types
 
-APP_NAME = "test-veo-2.0-generate-001"
+APP_NAME = "veo-2.0-generate-001"
 MODEL_NAME = 'veo-2.0-generate-001'
 # load_dotenv()
 # GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")

@@ -11,7 +11,7 @@ from ...core.errors import (
     DeploymentError, ProcessingError
 )
 
-APP_NAME = "test-wan-2.1-i2v-14b-720p"
+APP_NAME = "wan-2.1-i2v-14b-720p"
 CACHE_NAME = f"{APP_NAME}-cache"
 CACHE_PATH = "/cache"
 OUTPUTS_NAME = f"{APP_NAME}-outputs"

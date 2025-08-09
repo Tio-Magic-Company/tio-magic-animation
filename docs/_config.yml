@@ -18,8 +18,10 @@ navigation:
     url: /getting-started
   - title: Contributing
     url: /contributing
-  - title: Parameter Documentation
-    url: /parameter-documentation
+  - title: API Reference
+    url: /api
+  - title: Parameter Docs
+    url: /parameter-docs
 
 include:
   - assets/css
