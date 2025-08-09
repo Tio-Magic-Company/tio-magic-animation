@@ -174,6 +174,11 @@ A locally hosted Gradio GUI is provided for your convenience
 ### Interpolate
 - [Luma AI Ray 2](https://lumalabs.ai/ray)
 
+
+## Changelog
+### 1.0.0 - 2025-08-08
+- Release of Tio Magic Animation Toolkit.
+
 ## Disclaimer
 **TL;DR**: We don't make the videos - the AI models do. We just make it easier to use them.
 
