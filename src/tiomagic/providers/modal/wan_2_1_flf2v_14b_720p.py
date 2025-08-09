@@ -13,7 +13,7 @@ from ...core.errors import (
 )
 
 
-APP_NAME = "test-wan-2.1-flf2v-14b-720p"
+APP_NAME = "wan-2.1-flf2v-14b-720p"
 MODEL_NAME = "wan2.1-flf2v-14b-720p"
 CACHE_NAME = f"{APP_NAME}-cache"
 CACHE_PATH = "/cache"

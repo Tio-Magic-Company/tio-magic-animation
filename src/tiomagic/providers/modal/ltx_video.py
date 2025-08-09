@@ -14,7 +14,7 @@ from ...core.errors import (
 )
 
 # --- Configuration ---
-APP_NAME = "test-ltx-video-i2v"
+APP_NAME = "ltx-video-i2v"
 CACHE_NAME = f"{APP_NAME}-cache"
 CACHE_PATH = "/cache"
 OUTPUTS_NAME = f'{APP_NAME}-outputs'

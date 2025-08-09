@@ -1,7 +1,7 @@
 ---
 layout: default
-title: Parameter Documentation
-permalink: ./parameter-documentation
+title: Parameter Docs
+permalink: ./parameter-docs
 ---
 
 # Model Parameter Documentation
@@ -1322,9 +1322,6 @@ Because PusaV1 is relatively new, there is no central location for its required 
 
 <details>
     <summary>Optional Arguments</summary>
-
-    Wan vace supports flow shift, which is a value that estimates motion between two frames. A larger flow shift focuses on high motion or transformation. A smaller flow shift focuses on stability. The default for Pose Guidance is 3.0. Flow shift is calculated and loaded in the load_models stage. If you want to adjust flow shift, you must change the value in the load_models method, stop the app on Modal, and re-load the model.
-
     <table>
     <thead>
     <tr>
@@ -2269,7 +2266,7 @@ This is a LoRA applied on top of Wan 2.1 Vace 14b. All of the required arguments
 <details>
     <summary>Optional Arguments</summary>
 
-    Wan vace supports flow shift, which is a value that estimates motion between two frames. A larger flow shift focuses on high motion or transformation. A smaller flow shift focuses on stability. The default for Pose Guidance is 3.0. Flow shift is calculated and loaded in the load_models stage. If you want to adjust flow shift, you must change the value in the load_models method, stop the app on Modal, and re-load the model.
+
 
     <table>
     <thead>

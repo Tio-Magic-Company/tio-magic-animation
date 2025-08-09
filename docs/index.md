@@ -6,7 +6,9 @@ permalink: /
 
 # Tio Magic Animation Toolkit
 
-Tio Magic Animation Toolkit is designed to simplify the use of video AI models for animation. The Animation Toolkit empowers animators, developers, and AI enthusiasts to easily generate animated videos without the pain of complex technical setup, local hardware limitations, and haphazard documentation.
+Tio Magic Animation Toolkit is designed to simplify the use of open and closed-source video AI models for animation. The Animation Toolkit empowers animators, developers, and AI enthusiasts to easily generate animated videos without the pain of complex technical setup, local hardware limitations, and haphazard documentation.
+
+This toolkit leverages <a href="https://modal.com/" target="_blank">Modal</a> for cloud computing and runs various open/closed-source video generation models.
 
 ## Supported Features
 ## Image to Video
@@ -70,7 +72,7 @@ Tio Magic Animation Toolkit is designed to simplify the use of video AI models f
     </figure>
 </div>
 ## Text to Video
-<figcaption>A playful cartoon-style penguin with a round belly and flappy wings waddles up to a pair of green sunglasses lying on the ground. The penguin leans forward, carefully picks up the sunglasses with its flipper, and smoothly lifts them up to its face. It tilts its head with a confident smile as the green sunglasses rest perfectly on its beak. The animation is smooth and expressive, with exaggerated, bouncy cartoon motion.</figcaption>
+<figcaption>Prompt: A playful cartoon-style penguin with a round belly and flappy wings waddles up to a pair of green sunglasses lying on the ground. The penguin leans forward, carefully picks up the sunglasses with its flipper, and smoothly lifts them up to its face. It tilts its head with a confident smile as the green sunglasses rest perfectly on its beak. The animation is smooth and expressive, with exaggerated, bouncy cartoon motion.</figcaption>
 <div class="gif-grid">
     <figure>
         <img src="https://storage.googleapis.com/tm-animation-public-examples/t2v/penguin_t2v_phantomfusionx.gif" alt="T2V Wan 2.1 PhantomX (LoRA)">
@@ -121,3 +123,26 @@ Tio Magic Animation Toolkit is designed to simplify the use of video AI models f
 
 ### Interpolate
 - [Luma AI Ray 2](https://lumalabs.ai/ray)
+
+## Disclaimer
+**TL;DR**: We don't make the videos - the AI models do. We just make it easier to use them.
+
+TioMagic Animation is an **interface toolkit** that sits between you and various video generation AI models. Think of it as a universal remote control for AI video models.
+
+### What we do:
+✅ Provide a simple Python API to access multiple video models  
+✅ Handle the complexity of deploying models on Modal/cloud infrastructure  
+✅ Eliminate the need for expensive local GPUs  
+✅ Manage job queuing, status tracking, and result retrieval  
+✅ Abstract away provider-specific implementation details  
+
+### What we don't do:
+❌ Create or train the AI models  
+❌ Modify or enhance model outputs  
+❌ Own any rights to the generated content  
+❌ Control what the models can or cannot generate  
+
+### Important Notes:
+- All generated content comes directly from the underlying models (e.g., Wan2.1-VACE, CogVideoX)
+- You must comply with each model's individual license terms
+- Model availability and capabilities depend on the model creators, not us

@@ -21,12 +21,12 @@ from ...core.errors import (
         - outputs path to store video outputs on Modal Volume
         - GPU requirements
 """
-VOLUME_NAME = "test-wan-2.1-t2v-14b-cache"
+VOLUME_NAME = "wan-2.1-t2v-14b-cache"
 CACHE_PATH = "/cache" 
 MODEL_ID = "Wan-AI/Wan2.1-T2V-14B-Diffusers"
-OUTPUTS_NAME = "test-wan-2.1-t2v-14b-outputs"
+OUTPUTS_NAME = "wan-2.1-t2v-14b-outputs"
 OUTPUTS_PATH = "/outputs"
-APP_NAME = 'test-wan-2.1-text-to-video-14b'
+APP_NAME = 'wan-2.1-text-to-video-14b'
 
 GPU_CONFIG: GPUType = GPUType.A100_80GB
 TIMEOUT: int = 1800 # 30 minutes
