@@ -16,12 +16,6 @@ from ...core.constants import FeatureType
 from google import genai
 from google.genai import types
 
-APP_NAME = "veo-2.0-generate-001"
-MODEL_NAME = 'veo-2.0-generate-001'
-# load_dotenv()
-# GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
-# if not GOOGLE_API_KEY:
-#     raise ValueError("GOOGLE_API_KEY not found in environment variables")
 
 class Veo20Generate001(LocalProviderBase):
     def __init__(self):
@@ -30,7 +24,8 @@ class Veo20Generate001(LocalProviderBase):
         if not api_key:
             raise ValueError("GOOGLE_API_KEY not found in environment variables. Please set it in your .env file.")
         self.client = genai.Client(api_key=api_key)
-        self.app_name = APP_NAME
+        self.app_name = "veo-2.0-generate-001"
+        self.model_name = "veo-2.0-generate-001"
         self.feature = FeatureType.IMAGE_TO_VIDEO
         self.operations = None
 
@@ -52,48 +47,7 @@ class Veo20Generate001(LocalProviderBase):
             print("--> payload image path ", len(payload['image']))
             file = types.Image.from_file(location=payload['image'])
             payload['image'] = file
-
-
-        #     # Wait a moment for processing
-        #     import time
-        #     time.sleep(2)
-
-        #     # Retrieve the file to ensure it's fully processed
-        #     retrieved_file = self.client.files.get(name=uploaded_file.name)
-
-        #     # Check if file is active
-        #     print(f'File state: {retrieved_file.state}')
-        #     print(f'File details: name={retrieved_file.name}, mime_type={retrieved_file.mime_type}, size={retrieved_file.size_bytes}')
-
-        #     # Wait for file to be active if needed
-        #     max_attempts = 10
-        #     attempt = 0
-        #     while retrieved_file.state != "ACTIVE" and attempt < max_attempts:
-        #         print(f"Waiting for file to become active... (attempt {attempt + 1})")
-        #         time.sleep(2)
-        #         retrieved_file = self.client.files.get(name=uploaded_file.name)
-        #         attempt += 1
-
-        #     if retrieved_file.state != "ACTIVE":
-        #         raise ValueError(f"File upload failed or timed out. State: {retrieved_file.state}")
-
-        #     payload['image'] = retrieved_file
-        #     print(f'File ready for use: {retrieved_file.name}')
-
-        # elif isinstance(payload['image'], str) and payload['image'].startswith('data:'):
-        #     # Similar handling for base64...
-        #     pass
-
         return payload
-            # image = PIL.Image.open(payload['image'])
-            # payload['image'] = image
-            # base64_image = local_image_to_base64(payload['image'])
-            # bytes_image = base64_to_bytes(base64_image)
-            # payload['image'] = {"bytesBase64Encoded": bytes_image, "mimeType": "image/png"}
-
-            # payload['image'] = base64_image.split(",", 1)[1]
-            # payload["image"] = base64_to_bytes(base64_image)
-        # return payload
 
     def generate(self, required_args: Dict[str, Any], **kwargs) -> Dict[str, Any]:
         """Generate video using Google Veo API
@@ -119,7 +73,7 @@ class Veo20Generate001(LocalProviderBase):
             config = types.GenerateVideosConfig(**kwargs)
 
             operation = self.client.models.generate_videos(
-                model=MODEL_NAME,
+                model=self.model_name,
                 prompt = payload['prompt'],
                 image= payload['image'],
                 config=config
@@ -190,69 +144,131 @@ class Veo20Generate001(LocalProviderBase):
             print(f"Error in generate: {str(e)}")
             generation.update(message=f"Error in generate: {str(e)}")
 
-            raise GenerationError(app_name=APP_NAME, 
-                                  model=MODEL_NAME,
+            raise GenerationError(app_name=self.app_name, 
+                                  model=self.model_name,
                                   feature=FeatureType.IMAGE_TO_VIDEO,
                                   reason=str(e)
                                   )
-    # def check_generation_status(self, generation: Generation) -> Generation:
-    #     """Check the status of a previous generate call.
+    
+class Veo30GeneratePreview(LocalProviderBase):
+    def __init__(self):
+        super().__init__()
+        api_key = os.getenv("GOOGLE_API_KEY")
+        if not api_key:
+            raise ValueError("GOOGLE_API_KEY not found in environment variables. Please set it in your .env file.")
+        self.client = genai.Client(api_key=api_key)
+        self.app_name = "veo-3.0-generate-preview"
+        self.model_name = "veo-3.0-generate-preview"
+        self.feature = FeatureType.IMAGE_TO_VIDEO
+        self.operations = None
 
-    #     Args:
-    #         generation: The generation object containing call_id
 
-    #     Returns:
-    #         Updated generation object with status and results
-    #     """
-    #     print('CHECK GEN STATUS')
-    #     try:
-    #         # where generation['call_id'] is the operation object itself
-    #         test_operation = types.Operation(name=generation['call_id'])
-    #         operation = self.client.operations.get(test_operation)
-    #     except Exception as e:
-    #         print('operation not found: ', str(e))
+    def _prepare_payload(self, required_args: Dict[str, Any], **kwargs) -> Dict[str, Any]:
+        """Prepare payload specific to veo-3.0-generate-preview model.
+        Break out required args into payload
+        """
+        payload = super()._prepare_payload(required_args, **kwargs)
+        payload["feature_type"] = FeatureType.IMAGE_TO_VIDEO
 
-    #     if operation.done:
-    #         print('opereation done')
-    #         try:
-    #             from datetime import datetime
-    #             results = []
+        if payload['image'] is None:
+            raise ValueError("Argument 'image' is required for Image to Video generation")
 
-    #             # Download generated videos
-    #             for n, generated_video in enumerate(operation.response.generated_videos):
-    #                 # Download video
-    #                 self.client.files.download(file=generated_video.video)
+        if is_local_path(payload['image']):
+            print(f'Uploading local image: {payload["image"]}')
+            print("--> payload image path ", len(payload['image']))
+            file = types.Image.from_file(location=payload['image'])
+            payload['image'] = file
+        return payload
 
-    #                 # Save video to file
-    #                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    #                 video_filename = f"veo_output_{timestamp}_{n}.mp4"
+    def generate(self, required_args: Dict[str, Any], **kwargs) -> Dict[str, Any]:
+        """Generate video using Google Veo API
+        """
+        self._validate_config()
 
-    #                 # Setup output path
-    #                 current_dir = os.path.dirname(os.path.abspath(__file__))
-    #                 repo_root = os.path.dirname(os.path.dirname(os.path.dirname(current_dir)))
-    #                 output_videos_dir = os.path.join(repo_root, "output_videos")
-    #                 os.makedirs(output_videos_dir, exist_ok=True)
-    #                 video_path = os.path.join(output_videos_dir, video_filename)
+        from datetime import datetime
+        print(f"Running {self.app_name} generate with prompt: {required_args['prompt']}")
 
-    #                 # Save video
-    #                 generated_video.video.save(video_path)
+        generation = Generation(
+            timestamp=datetime.now().strftime("%Y%m%d_%H%M%S"),
+            required_args=required_args,
+            optional_args=kwargs
+        )
+        print('-->generation object done', generation)
 
-    #                 results.append({
-    #                     'filename': video_filename,
-    #                     'path': video_path
-    #                 })
-    #             generation.update(status=JobStatus.COMPLETED, message='Video generation completed', result_video=results)
-    #         except Exception as e:
-    #             print("Error downloading veo2 generated video, ", str(e))
-    #     else:
-    #         print("still waiting")
-    #         generation.update(timestamp=create_timestamp(), message='Video generation in progress')
+
+        try:
+            payload = self._prepare_payload(required_args, **kwargs)
+            print('-->payload done')
+
+            # Call Google Veo API
+            config = types.GenerateVideosConfig(**kwargs)
+
+            operation = self.client.models.generate_videos(
+                model=self.model_name,
+                prompt = payload['prompt'],
+                image= payload['image'],
+                config=config
+            )
+            print("--> Operation creation done", operation)
+
+            print(f"--> Generation started with operation: {operation.name}")
+
+            # Wait for completion
+            while not operation.done:
+                print("Waiting for video generation to complete...")
+                time.sleep(10)
+                operation = self.client.operations.get(operation)
+            
+            # Download the video
+            generated_video = operation.response.generated_videos[0]
+            video_bytes = self.client.files.download(file=generated_video.video)
+            # generated_video.video.save("veo-2-i2v.mp4")
+            timestamp = create_timestamp()
+
+            video_filename = f"veo_output_{timestamp}.mp4"
+
+            # Get the directory of this file and save to the same directory
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            repo_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(current_dir))))
+            output_videos_dir = os.path.join(repo_root, "output_videos")
+            os.makedirs(output_videos_dir, exist_ok=True)
+            video_path = os.path.join(output_videos_dir, video_filename)
+
+            with open(video_path, 'wb') as f:
+                f.write(video_bytes)
+            print(f"File downloaded as {video_path}")
+            
+
+            generation.update(
+                call_id=operation.name,
+                status="completed",
+                message=f"Video generated and saved to {video_path}",
+                result_video=video_path
+            )
+
+            return generation.to_dict()
+
+        except Exception as e:
+            print(f"Error in generate: {str(e)}")
+            generation.update(message=f"Error in generate: {str(e)}")
+
+            raise GenerationError(app_name=self.app_name, 
+                                  model=self.model_name,
+                                  feature=FeatureType.IMAGE_TO_VIDEO,
+                                  reason=str(e)
+                                  )
+registry.register(
+    feature="image_to_video",
+    model="veo-2.0-generate-001",
+    provider="local",
+    implementation=Veo20Generate001
+)
 
 registry.register(
     feature="image_to_video",
-    model=MODEL_NAME,
+    model="veo-3.0-generate-preview",
     provider="local",
-    implementation=Veo20Generate001
+    implementation=Veo30GeneratePreview
 )
 
 def base64_to_bytes(data_url):
@@ -261,25 +277,3 @@ def base64_to_bytes(data_url):
     else:
         b64data = data_url
     return base64.b64decode(b64data)
-
-# veo-2.0-generate-001
-# veo-3.0-generate-preview
-# print("Local generation")
-# operation = client.models.generate_videos(
-#     model="veo-3.0-generate-preview",
-#     prompt="Panning wide shot of a purring kitten sleeping in the sunshine",
-#     config=types.GenerateVideosConfig(
-#         person_generation="allow_all",  # "allow_adult" and "dont_allow" for Veo 2 only
-#         aspect_ratio="16:9",  # "16:9", and "9:16" for Veo 2 only
-#     ),
-# )
-
-# while not operation.done:
-#     time.sleep(20)
-#     operation = client.operations.get(operation)
-
-# for n, generated_video in enumerate(operation.response.generated_videos):
-#     client.files.download(file=generated_video.video)
-#     generated_video.video.save(f"video{n}.mp4")
-
-

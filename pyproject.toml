@@ -30,6 +30,7 @@ dependencies = [
     "pillow",
     "numpy",
     "python-dotenv",
+    "einops",
     "requests",
     # Dependency for GUI
     "gradio_client", 

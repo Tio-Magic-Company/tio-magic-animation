@@ -58,6 +58,7 @@ image = (
         "huggingface-hub",
         "fastapi[standard]",
         "modelscope",
+        "python-dotenv"
     ).env({"HF_HUB_CACHE": CACHE_PATH}))
 
 cache_volume = modal.Volume.from_name(CACHE_NAME, create_if_missing=True)

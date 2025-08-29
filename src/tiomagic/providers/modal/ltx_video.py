@@ -48,7 +48,8 @@ image = (
         "torch",
         "torchvision",
         "transformers",
-        "fastapi[standard]"
+        "fastapi[standard]",
+        "python-dotenv"
     )
     .env({"HF_HUB_CACHE": CACHE_PATH, "TOKENIZERS_PARALLELISM": "false", "HF_HUB_ENABLE_HF_TRANSFER": "1"})
 )

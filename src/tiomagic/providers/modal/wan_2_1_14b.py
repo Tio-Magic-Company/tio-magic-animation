@@ -58,6 +58,7 @@ image = (
         "numpy>=1.23.5,<2",
         "fastapi[standard]",
         "peft",
+        "python-dotenv"
     ).env({"HF_HUB_CACHE": CACHE_PATH})
 )
 

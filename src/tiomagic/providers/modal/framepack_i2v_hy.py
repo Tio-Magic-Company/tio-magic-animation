@@ -39,6 +39,7 @@ image = (
         "numpy",
         "imageio[ffmpeg]",
         "fastapi[standard]",
+        "python-dotenv"
     )
 )
 
