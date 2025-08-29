@@ -1,6 +1,6 @@
 # Import only the user-facing implementation class
 try:
-    from .veo import Veo20Generate001
+    from .veo import Veo20Generate001, Veo30GeneratePreview
     from .luma import LumaRay2I2V, LumaRay2Interpolate
 except ImportError as e:
     import warnings
@@ -9,6 +9,7 @@ except ImportError as e:
 # Export only the classes that should be accessible to users
 __all__ = [
     "Veo20Generate001",
+    "Veo30GeneratePreview"
     "LumaRay2I2V",
     "LumaRay2Interpolate"
 ]

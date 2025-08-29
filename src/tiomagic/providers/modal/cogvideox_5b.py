@@ -42,7 +42,8 @@ image = (
         "moviepy>=2.0.0",
         "scikit-video>=1.1.11",
         "pydantic>=2.10.3",
-        "torchao"
+        "torchao",
+        "python-dotenv"
     ).env({"HF_HUB_CACHE": CACHE_PATH})
 )
 

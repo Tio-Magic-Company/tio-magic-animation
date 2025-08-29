@@ -59,7 +59,7 @@ def validate_parameters(feature: str, model: str, required_args: Dict, optional_
                 return False, {}, f"Parameter '{param_name}' is not a valid optional parameter"
 
         if feature == "pose_guidance":
-            if not (validated_params["guiding_video"] or validated_params["pose_video"]):
+            if not (validated_params.get('guiding_video', None) or validated_params.get('pose_video', None)):
                 return False, {}, f"Parameter 'guiding_video' or 'pose_video' must be provided for f{feature}"
 
         return True, validated_params, ""

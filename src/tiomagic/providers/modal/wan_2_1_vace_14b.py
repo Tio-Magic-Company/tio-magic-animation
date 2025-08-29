@@ -51,7 +51,8 @@ image = (
         "safetensors",
         "fastapi",
         "python-dotenv",
-        "peft"
+        "peft",
+        "python-dotenv"
     ).run_commands("pip install easy-dwpose --no-deps")
     .env({"HF_HUB_CACHE": CACHE_PATH, "TOKENIZERS_PARALLELISM": "false"})
 )

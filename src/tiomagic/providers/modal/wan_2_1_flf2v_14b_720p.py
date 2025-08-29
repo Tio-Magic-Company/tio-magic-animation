@@ -24,7 +24,7 @@ MODEL_ID = "Wan-AI/Wan2.1-FLF2V-14B-720P-diffusers"
 
 GPU_CONFIG: GPUType = GPUType.A100_80GB
 TIMEOUT: int = 1800 # 30 minutes
-SCALEDOWN_WINDOW: int = 900 # stay idle for 15 minutes before scaling down
+SCALEDOWN_WINDOW: int = 480 # stay idle for 8 minutes before scaling down
 
 image = (
     modal.Image.debian_slim(python_version="3.11")
@@ -47,6 +47,7 @@ image = (
         "gradio>=5.0.0",
         "numpy>=1.23.5,<2",
         "fastapi",
+        "python-dotenv"
     ).env({"HF_HUB_CACHE": CACHE_PATH})
 )
 
@@ -78,11 +79,11 @@ class Interpolate:
 
         try:
             print(f"✅ {time.time() - start_time:.2f}s: Loading image_encoder...")
-            image_encoder = CLIPVisionModel.from_pretrained(MODEL_ID, subfolder="image_encoder", torch_dtype=torch.float32)
+            image_encoder = CLIPVisionModel.from_pretrained(MODEL_ID, subfolder="image_encoder", torch_dtype=torch.bfloat16)
             print(f"✅ {time.time() - start_time:.2f}s: image_encoder loaded.")
 
             print(f"✅ {time.time() - start_time:.2f}s: Loading VAE...")
-            vae = AutoencoderKLWan.from_pretrained(MODEL_ID, subfolder="vae", torch_dtype=torch.float32)
+            vae = AutoencoderKLWan.from_pretrained(MODEL_ID, subfolder="vae", torch_dtype=torch.bfloat16)
             print(f"✅ {time.time() - start_time:.2f}s: VAE loaded.")
 
             print(f"✅ {time.time() - start_time:.2f}s: Creating pipeline...")
@@ -115,26 +116,35 @@ class Interpolate:
         resize_ratio = max(width / image.width, height / image.height)
 
         # Resize the image
-        width = round(image.width * resize_ratio)
-        height = round(image.height * resize_ratio)
-        size = [width, height]
-        image = TF.center_crop(image, size)
+        new_width = round(image.width * resize_ratio)
+        new_height = round(image.height * resize_ratio)
+        image = image.resize((new_width, new_height))
+
+        image = TF.center_crop(image, [height, width])
 
         return image, height, width
     @modal.method()
     def generate(self, data: Dict[str, Any]):
         from diffusers.utils import export_to_video
+        import torch
+
+        print("clearing cache before generating...")
+        torch.cuda.empty_cache()
         interpolate_schema = FEATURE_SCHEMAS["interpolate"][MODEL_NAME]
 
         first_frame = data.get('first_frame')
         last_frame = data.get('last_frame')
         # LOAD_IMAGE these frames
         height = data.get('height', interpolate_schema["optional"]["height"]["default"])
-        width = data.get('width', interpolate_schema["optional"]["height"]["default"])
+        width = data.get('width', interpolate_schema["optional"]["width"]["default"])
+        print(f'original first frame width {width}, height {height}')
 
         data['first_frame'], height, width = self.aspect_ratio_resize(first_frame)
+        print(f'aspect ratio resize width {width}, height {height}')
         if last_frame.size != data['first_frame'].size:
+            print(f"last frame size {last_frame.size} does not match first frame size {data['first_frame'].size}")
             data['last_frame'], _, _ = self.center_crop_resize(last_frame, height, width)
+            print(f"last frame resized {data['last_frame'].size}")
         data['image'] = data.pop('first_frame')
         data['last_image'] = data.pop('last_frame')
         output = self.pipe(**data).frames[0]

@@ -163,8 +163,17 @@ SCHEMAS = {
             # "RESOLUTION": {"type": str, "default": "720p", "description": "The resolution of the generated video (Veo 3 models only). Accepts '720p' or '1080p'."},
             "numberOfVideos": {"type": int, "default": 1, "description": "The number of output videos requested, from 1 to 2."},
             "durationSeconds": {"type": int, "default": 8, "description": "Veo 2 only. Length of each output video in seconds, between 5 and 8"},
-
             # "SEED_NUMBER": {"type": int, "description": "A number from 0 to 4,294,967,295 to make video generation deterministic."}
+        }
+    },
+    "veo-3.0-generate-preview": {
+        "required": {
+            "prompt": {"type": str, "description": "Text prompt to guide generation"},
+            "image": {"type": str, "description": "Path or URL to input image"}
+        },
+        "optional": {
+            "negativePrompt": {"type": str, "default": "", "description": "Text string that describes anything you want to discourage the model from generating"},
+            "aspectRatio": {"type": str, "default": "16:9", "description": "Defines the aspect ratio of the generated videos. Accepts '16:9' (landscape) or '9:16' (portrait)."},
         }
     },
     "pusa-v1": {
