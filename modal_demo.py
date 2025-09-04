@@ -29,6 +29,22 @@ def image_to_video_example():
     }
     tm.image_to_video(model="ltx-video", required_args=required_args, **optional_args)
 
+def wan22_fflf_example():
+    tm.configure(provider="modal")
+    prompt = "2d animation of a cartoon that goes from day to night"
+    first_frame = "/Users/jmportilla/Downloads/start_racoon.png"
+    last_frame = "/Users/jmportilla/Downloads/end_racoon.png"
+
+    required_args = {
+        "prompt": prompt,
+        "first_frame": first_frame,
+        "last_frame":last_frame
+    } 
+    optional_args = {
+        
+    }
+    tm.interpolate(model="wan2.2-flf2v-a14b", required_args=required_args, **optional_args)
+
 def check_status(job_id: str):
     tm.check_generation_status(job_id)
 
@@ -40,7 +56,9 @@ def list_implementations():
 
 
 if __name__ == "__main__":
-    image_to_video_example()
+    # image_to_video_example()
+    wan22_fflf_example()
+    # list_implementations()
 
 
 

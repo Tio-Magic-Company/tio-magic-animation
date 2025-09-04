@@ -9,6 +9,7 @@ try:
     from .framepack_i2v_hy import FramepackI2VHYImageToVideo, FramepackI2VHYInterpolate
     from .ltx_video import LTXVideoImageToVideo
     from .pusav1 import PusaV1TextToVideo, PusaV1ImageToVideo
+    from .wan_2_2_flf2v_14b_720p import Wan22I2vInterpolateA14b
 except ImportError as e:
     import warnings
     warnings.warn(f"Could not import Model: {e}")
@@ -32,4 +33,5 @@ __all__ = [
     "Wan21VaceImageToVideo14BFusionX",
     "PusaV1TextToVideo",
     "PusaV1ImageToVideo",
+    "Wan22I2vInterpolateA14b"
 ]

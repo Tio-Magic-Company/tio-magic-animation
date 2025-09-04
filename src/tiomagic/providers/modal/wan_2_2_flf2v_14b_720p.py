@@ -42,7 +42,7 @@ MODEL_ID = "Wan-AI/Wan2.2-I2V-A14B-Diffusers"
 # NOTE: Additional model needed for optimized transformers
 TRANSFORMER_MODEL_ID = "cbensimon/Wan2.2-I2V-A14B-bf16-Diffusers"
 
-GPU_CONFIG: GPUType = GPUType.A100_80GB
+GPU_CONFIG: GPUType = GPUType.H100
 TIMEOUT: int = 1800 # 30 minutes
 SCALEDOWN_WINDOW: int = 900 # stay idle for 15 minutes before scaling down
 
@@ -62,15 +62,16 @@ MAX_SEED = np.iinfo(np.int32).max
 
 # Default negative prompt
 DEFAULT_NEGATIVE_PROMPT = "色调艳丽，过曝，静态，细节模糊不清，字幕，风格，作品，画作，画面，静止，整体发灰，最差质量，低质量，JPEG压缩残留，丑陋的，残缺的，多余的手指，画得不好的手部，画得不好的脸部，畸形的，毁容的，形态畸形的肢体，手指融合，静止不动的画面，杂乱的背景，三条腿，背景人很多，倒着走,过曝，"
-
+cuda_tag = "12.6.3-devel-ubuntu22.04"  # matches cu126
 image = (
-    modal.Image.debian_slim(python_version="3.11")
-    .apt_install("git")
+    modal.Image.from_registry(f"nvidia/cuda:{cuda_tag}", add_python="3.11")
+    .entrypoint([])  # quiet the base image
+    .apt_install("git", "build-essential")  # for any native builds
     .pip_install(
-        # NOTE: PyTorch 2.8 nightly for optimization features
+        # your deps (keep versions you already set)
         "torch<2.9",
         "torchvision>=0.19.0",
-        "torchao",  # For quantization
+        "torchao",
         "git+https://github.com/huggingface/diffusers.git",
         "transformers>=4.49.0",
         "tokenizers>=0.20.3",
@@ -82,13 +83,23 @@ image = (
         "numpy>=1.23.5,<2",
         "fastapi",
         "Pillow",
+        "python-dotenv",
+        "peft",
+        "ftfy",
     )
+    # If you want the exact nightly wheel, keep your pip command:
     .run_commands(
-        # Install PyTorch 2.8 nightly for optimization
         "pip install --upgrade --pre --extra-index-url https://download.pytorch.org/whl/nightly/cu126 'torch<2.9'"
     )
-    .env({"HF_HUB_CACHE": CACHE_PATH})
+    .env({
+        "HF_HUB_CACHE": CACHE_PATH,
+        # These are usually already correct on devel images, but it doesn't hurt:
+        "CUDA_HOME": "/usr/local/cuda",
+        "PATH": "/usr/local/cuda/bin:$PATH",
+        "LD_LIBRARY_PATH": "/usr/local/cuda/lib64:/usr/local/cuda/extras/CUPTI/lib64:$LD_LIBRARY_PATH",
+    })
 )
+
 
 cache_volume = modal.Volume.from_name(CACHE_NAME, create_if_missing=True)
 outputs_volume = modal.Volume.from_name(OUTPUTS_NAME, create_if_missing=True)
@@ -552,7 +563,7 @@ class Wan22I2vInterpolateA14b(ModalProviderBase):
         super().__init__(api_key)
         self.app_name = APP_NAME
         self.modal_app = app
-        self.modal_class_name = "Interpolate"
+        self.modal_class_name = FeatureType.INTERPOLATE
         
     def _prepare_payload(self, required_args: Dict[str, Any], **kwargs) -> Dict[str, Any]:
         """Prepare payload specific to Wan 2.2 I2V Interpolate model."""
@@ -601,7 +612,7 @@ WebAPI = app.cls(
 
 registry.register(
     feature=FeatureType.INTERPOLATE,
-    model="wan2.2-i2v-a14b",
+    model="wan2.2-flf2v-a14b",
     provider="modal",
     implementation=Wan22I2vInterpolateA14b
 )
