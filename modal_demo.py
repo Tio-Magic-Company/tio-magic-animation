@@ -57,8 +57,9 @@ def list_implementations():
 
 if __name__ == "__main__":
     # image_to_video_example()
-    wan22_fflf_example()
+    # wan22_fflf_example()
     # list_implementations()
+    check_status('b8eecfec-84ac-462e-9ae9-0582ed13fdce')
 
 
 

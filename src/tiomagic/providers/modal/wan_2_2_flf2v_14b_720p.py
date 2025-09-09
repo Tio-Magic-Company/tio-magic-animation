@@ -42,7 +42,7 @@ MODEL_ID = "Wan-AI/Wan2.2-I2V-A14B-Diffusers"
 # NOTE: Additional model needed for optimized transformers
 TRANSFORMER_MODEL_ID = "cbensimon/Wan2.2-I2V-A14B-bf16-Diffusers"
 
-GPU_CONFIG: GPUType = GPUType.H100
+GPU_CONFIG: GPUType = GPUType.H200
 TIMEOUT: int = 1800 # 30 minutes
 SCALEDOWN_WINDOW: int = 900 # stay idle for 15 minutes before scaling down
 
@@ -224,12 +224,27 @@ def capture_component_call(
 
 
 def drain_module_parameters(module: torch.nn.Module):
-    state_dict_meta = {name: {'device': tensor.device, 'dtype': tensor.dtype} for name, tensor in module.state_dict().items()}
-    state_dict = {name: torch.nn.Parameter(torch.empty_like(tensor, device='cpu')) for name, tensor in module.state_dict().items()}
-    module.load_state_dict(state_dict, assign=True)
-    for name, param in state_dict.items():
-        meta = state_dict_meta[name]
-        param.data = torch.Tensor([]).to(**meta)
+    """
+    Replaces all parameters in a module with empty tensors on the CPU.
+    Handles torchao's Float8Tensor by dequantizing first.
+    """
+    # Import the custom tensor type to check against it
+    from torchao.quantization import Float8Tensor
+
+    new_state_dict = {}
+    for name, tensor in module.state_dict().items():
+        # Check if the tensor is the special quantized type
+        if isinstance(tensor, Float8Tensor):
+            # Dequantize it back to a normal tensor first, then create an empty one like it
+            dequantized_tensor = tensor.dequantize()
+            placeholder = torch.nn.Parameter(torch.empty_like(dequantized_tensor, device='cpu'))
+        else:
+            # If it's a normal tensor, proceed as before
+            placeholder = torch.nn.Parameter(torch.empty_like(tensor, device='cpu'))
+        
+        new_state_dict[name] = placeholder
+
+    module.load_state_dict(new_state_dict, assign=True)
 
 
 def optimize_pipeline_(pipeline: Callable[P, Any], *args: P.args, **kwargs: P.kwargs):
